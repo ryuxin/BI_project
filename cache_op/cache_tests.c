@@ -112,7 +112,7 @@ rdtsc(void)
 
 	asm volatile ("rdtscp" : "=a" (a), "=d" (d) : : "ebx", "ecx");
 
-	return a | ((uint64_t)d << 32);
+	return ((uint64_t)d << 32) | (uint64_t)a;
 }
 
 void
@@ -210,7 +210,7 @@ exec(char *name, access_t *how_ops, size_t nops, pattern_t pat)
 			end   = rdtsc();
 			tot  += end-start;
 		}
-		if (how_ops[nops-1] != SIZES) printf("%8llu\t", (tot-overhead)/((sizes[i]/CACHE_LINE)*ITER));
+		if (how_ops[nops-1] != SIZES) printf("%8lu\t", (tot-overhead)/((sizes[i]/CACHE_LINE)*ITER));
 		else                          printf("%8lu\t", sizes[i]);
 	}
 	printf("\n");
