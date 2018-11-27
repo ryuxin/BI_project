@@ -2,11 +2,15 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <assert.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <string.h>
 
 #define _GNU_SOURCE
 #include <sched.h>
 #include <sys/resource.h>
 #include <sys/types.h>
+#include <sys/mman.h>
 
 static void
 call_getrlimit(int id, char *name)
@@ -69,14 +73,15 @@ set_prio(void)
 #define MEM_SZ     (1<<26) 	/* 64MB */
 #define ITER       256
 #define MEM_ITEMS  (MEM_SZ/CACHE_LINE)
+#define SIZE	   (MEM_ITEMS * sizeof (struct cache_line) + 2*PAGE_SIZE + MEM_ITEMS*sizeof(int))
 
 struct cache_line {
 	unsigned int v;
 	struct cache_line *next; /* random access */
 } __attribute__((aligned(CACHE_LINE)));
 
-struct cache_line mem[MEM_ITEMS];
-int rand_mem[MEM_ITEMS];
+struct cache_line *mem;
+int *rand_mem;
 
 typedef enum {
 	SIZES,
@@ -220,9 +225,15 @@ int
 main(void)
 {
 //	set_prio();
-	init_random_access();
-
+	char *file = "/lfs/cache_test";
+	int fd = open(file, O_CREAT | O_RDWR, 0666);
+	ftruncate(fd, SIZE);
+	mem = mmap(0, SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+	rand_mem = (int *)((char *)mem + MEM_ITEMS * sizeof (struct cache_line) + PAGE_SIZE);
+	memset(mem, 0, MEM_ITEMS * sizeof (struct cache_line));
+	memset(rand_mem, 0, MEM_ITEMS * sizeof(int));
 //	printf("Cycles per cache-line of the operations last in the list of operations (sequential)\n\n");
+	init_random_access();
 
 	exec("Sizes", (access_t[1]){SIZES}, 1, SEQUENTIAL);
 
