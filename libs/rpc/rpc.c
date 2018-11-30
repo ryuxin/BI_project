@@ -1,5 +1,4 @@
 #include "rpc.h"
-#include "test.h"
 
 static struct msg_pool global_msg_pool;
 static struct local_pos snt_pos[NUM_NODE], rcv_pos[NUM_NODE];
@@ -12,6 +11,7 @@ rpc_create(int node_mem, int size)
 	void *addr;
 	volatile struct create_ret *ret = (struct create_ret *)ret_page[caller].addr;
 
+//	printc("rpc create\n");
 	size  = round_up_to_page(size);
 	n     = size/PAGE_SIZE;
 	addr  = alloc_pages(n);
@@ -33,33 +33,57 @@ rpc_connect(int node_mem, int recv_node, int size)
 }
 
 int
-rpc_send(int snd_node, int rcv_node, int size, void *addr)
+rpc_send(int node_mem, int recv_node, int size)
 {
-	int caller = snd_node, ret;
+	int caller = node_mem & 0xFFFF, memid = node_mem >> 16;
+	int ret;
 	struct msg_meta meta;
+	struct mem_meta * mem;
+	void *addr;
 
-	clwb_range_opt(addr, addr+size);
-	meta.addr = addr;
-	meta.size = size;
-	ret = msg_enqueue(&global_msg_pool.nodes[rcv_node].recv[caller], &meta);
-
+//	printc("rpc send sender %d to %d id %d sz %d\n", caller, recv_node, memid, size);
+	mem = mem_lookup(memid);
+	assert(size <= mem->size);
+	addr = (void *)mem->addr;
+	clwb_range(addr, addr+size);
+	meta.mem_id = memid;
+	meta.size   = size;
+#ifdef NO_HEAD
+	ret = msg_enqueue(&global_msg_pool.nodes[recv_node].recv[caller], &snt_pos[recv_node].pos[caller], &meta);
+#else
+	ret = msg_enqueue(&global_msg_pool.nodes[recv_node].recv[caller], &meta);
+#endif
 	return ret;
 }
 
 void *
-rpc_recv(int caller, int spin)
+rpc_recv(int node_mem, int spin)
 {
+	int caller = node_mem & 0xFFFF, memid = node_mem >> 16;
+	struct recv_ret *ret = (struct recv_ret *)ret_page[caller].addr;
 	int deq, i;
 	struct msg_meta meta;
+	struct mem_meta * mem;
 	void *addr;
 
+//	printc("rpc recv node %d\n", caller);
 	do {
 		for(i=(caller+1)%NUM_NODE; i!=caller; i = (i+1)%NUM_NODE) {
+#ifdef NO_HEAD
+			deq = msg_dequeue(&global_msg_pool.nodes[caller].recv[i], &rcv_pos[caller].pos[i], &meta);
+#else
 			deq = msg_dequeue(&global_msg_pool.nodes[caller].recv[i], &meta);
+#endif
 			if (!deq) {
-				addr = meta.addr;
+				ret->mem_id = meta.mem_id;
+				ret->size   = meta.size;
+				ret->sender = i;
+				ret->addr   = mem_retrieve(meta.mem_id, caller);
+				mem         = mem_lookup(meta.mem_id);
+				assert(meta.size <= mem->size);
+				addr = (void *)mem->addr;
 				clflush_range(addr, addr+meta.size);
-				return addr;
+				return ret_page[caller].dst;
 			}
 		}
 	} while(spin);
