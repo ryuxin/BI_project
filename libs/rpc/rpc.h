@@ -1,59 +1,44 @@
 #ifndef RPC_H
 #define RPC_H
 
+#define MAX_MSG_SIZE 256
 #define MSG_NUM 16
 //#define NO_HEAD 1
 
 struct msg_meta {
-	int mem_id; /* memory object id */
 	int size;   /* message size */
 	int use;
 } __attribute__((aligned(CACHE_LINE), packed));
 
+struct msg_node {
+	struct msg_meta meta;
+	char data[MAX_MSG_SIZE];
+} __attribute__((aligned(CACHE_LINE), packed));
+
 struct msg_queue {
-#ifndef NO_HEAD
-	int head;
-	char pad[CACHELINE_SIZE-sizeof(int)];
-	int tail;
-	char _pad[CACHELINE_SIZE-sizeof(int)];
-#endif
-	struct msg_meta ring[MSG_NUM];
+	struct msg_node ring[MSG_NUM];
 } __attribute__((aligned(CACHE_LINE), packed));
 
+/* 
+ * This is core local. Server core may use all of them, while 
+ * other client cores only use entries associated with servers.
+ */
 struct local_pos {
-	int pos[NUM_NODE];
+	int head[NUM_NODES][NUM_CORE_PER_NODE];
+	int tail[NUM_NODES][NUM_CORE_PER_NODE];
 } __attribute__((aligned(CACHE_LINE), packed));
 
-struct recv_queues {
-	struct msg_queue recv[NUM_NODE];
-} __attribute__((aligned(CACHE_LINE)));
 
-struct msg_pool {
-	struct recv_queues nodes[NUM_NODE];
-};
+/* send a message with data and size to (node, core) */
+int rpc_send(int node, int core, void *data, int size);
+/* receive a message from (node, core), return size and copy message to data */ 
+int rpc_recv(int node, int core, void *data, int spin); 
+void rpc_init_global();
+void rpc_init_local();
 
-struct create_ret {
-	void *addr;
-	int mem_id;
-};
 
-struct recv_ret {
-	void *addr;
-	int mem_id, size, sender;
-};
 
-struct shared_page {
-	void *addr, *dst;
-};
-
-void *rpc_create(int node_mem, int size);   /* return mem address and mem_id*/
-int rpc_connect(int node_mem, int recv_node, int size);
-int rpc_send(int node_mem, int recv_node, int size);
-void *rpc_recv(int node_mem, int spin);  /* return mem addr, mem_id, size and sender */ 
-int rpc_free(int node_mem, int size);
-void rpc_register(int node_mem);   /* set up shared page for return */
-void rpc_init(int node_mem, vaddr_t untype, int size);
-
+/*********** FIXME ******************/
 /* single producer single consumer queue */
 #ifdef NO_HEAD
 static inline int
