@@ -21,27 +21,29 @@ bi_wb_cache(void *p)
 }
 
 static inline void
-clflush_range(void *s, void *e)
+clflush_range(void *s, size_t sz)
 {
+	void *e;
 	s = (void *)round_to_cacheline(s);
-	e = (void *)round_to_cacheline(e-1);
+	e = (void *)round_to_cacheline(s + sz);
 	for(; s<=e; s += CACHE_LINE) cos_flush_cache(s);
-	asm volatile ("sfence"); /* serialize */
+	bi_wmb(); /* serialize */
 }
 
 static inline void
-clwb_range_opt(void *s, void *e)
+clwb_range_opt(void *s, size_t sz)
 {
+	void *e;
 	s = (void *)round_to_cacheline(s);
-	e = (void *)round_to_cacheline(e-1);
+	e = (void *)round_to_cacheline(s + sz);
 	for(; s<=e; s += CACHE_LINE) cos_wb_cache(s);
 }
 
 static inline void
-clwb_range(void *s, void *e)
+clwb_range(void *s, size_t sz)
 {
-	clwb_range_opt(s, e);
-	asm volatile ("sfence"); /* serialize */
+	clwb_range_opt(s, sz);
+	bi_wmb(); /* serialize */
 }
 
 /************** FIXME: adapt to gru version *****/

@@ -17,24 +17,24 @@ bi_wb_cache(void *p)
 }
 
 static inline void
-clflush_range(void *s, void *e)
+clflush_range(void *s, size_t sz)
 {
 	(void)s;
-	(void)e;
+	(void)sz;
 }
 
 static inline void
-clwb_range_opt(void *s, void *e)
+clwb_range_opt(void *s, size_t sz)
 {
 	(void)s;
-	(void)e;
+	(void)sz;
 }
 
 static inline void
-clwb_range(void *s, void *e)
+clwb_range(void *s, size_t sz)
 {
 	(void)s;
-	(void)e;
+	(void)sz;
 }
 
 #define PS_ATOMIC_POSTFIX "q" /* x86-64 */

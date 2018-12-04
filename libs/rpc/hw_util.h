@@ -3,18 +3,16 @@
 
 #include <constant.h>
 #include <stdint.h>
-#include <cc-cache_util.h>
-#include <noncc-cache_util.h>
 
-/**** TODO split to cc and non-cc/gru version for atomic ***/
-/* memoory barrier, compiler barrier, gobal rdtsc, core id, node id */
-/* https://github.com/urcu/userspace-rcu/blob/master/include/urcu/arch/x86.h */
+/**** TODO ***/
+/* gobal rdtsc, core id, node id */
 
-static inline void 
-bi_compiler_barrier(void)
-{
-	asm volatile("" ::: "memory");
-}
+#define BI_ACCESS_ONCE(x)	(*(__volatile__  __typeof__(x) *)&(x))
+
+#define bi_rmb()     __asm__ __volatile__ ("lfence":::"memory")
+#define bi_wmb()     __asm__ __volatile__ ("sfence"::: "memory")
+#define bi_mb()      __asm__ __volatile__ ("mfence":::"memory")
+#define bi_ccb()     __asm__ __volatile__ ("" ::: "memory")
 
 /* x86 cpuid instruction barrier. */
 static inline void
@@ -39,5 +37,8 @@ bi_local_rdtsc(void)
 
 	return ((uint64_t)d << 32) | (uint64_t)a;
 }
+
+#include <cc-cache_util.h>
+#include <noncc-cache_util.h>
 
 #endif /* HW_UTIL_H */
