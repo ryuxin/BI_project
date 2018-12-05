@@ -1,35 +1,80 @@
 #include "rpc.h"
+#include "bi_pointer.h"
+#include "mem_mgr.h"
 
-static struct msg_pool global_msg_pool;
-static struct local_pos snt_pos[NUM_NODE], rcv_pos[NUM_NODE];
-static struct shared_page ret_page[NUM_NODE];
+static struct local_pos snt_pos, rcv_pos;
 
-int
-rpc_send(int node_mem, int recv_node, int size)
+static inline int
+rpc_send_ext(struct msg_queue *q, int *pos, void *data, size_t size)
 {
-	int caller = node_mem & 0xFFFF, memid = node_mem >> 16;
-	int ret;
-	struct msg_meta meta;
-	struct mem_meta * mem;
-	void *addr;
+	struct msg_node *mn;
+	int cur = (*pos) % MSG_NUM;
 
-//	printc("rpc send sender %d to %d id %d sz %d\n", caller, recv_node, memid, size);
-	mem = mem_lookup(memid);
-	assert(size <= mem->size);
-	addr = (void *)mem->addr;
-	clwb_range(addr, addr+size);
-	meta.mem_id = memid;
-	meta.size   = size;
-#ifdef NO_HEAD
-	ret = msg_enqueue(&global_msg_pool.nodes[recv_node].recv[caller], &snt_pos[recv_node].pos[caller], &meta);
-#else
-	ret = msg_enqueue(&global_msg_pool.nodes[recv_node].recv[caller], &meta);
-#endif
-	return ret;
+	mn = &(q->ring[cur]);
+	bi_flush_cache(&mn->meta);
+	if (unlikely(mn->meta.use)) return -1;
+	bi_publish_area(mn->data, data, size);
+	mn->meta.size = size;
+	mn->meta.use  = 1;
+	bi_wb_cache(&mn->meta);
+	*pos = cur + 1;
+	return 0;
 }
 
-void *
-rpc_recv(int node_mem, int spin)
+static inline size_t
+rpc_recv_ext(struct msg_queue *q, int *pos, void *data, int spin)
+{
+	struct msg_node *mn;
+	size_t ret_sz = 0;
+	int cur = (*pos) % MSG_NUM;
+
+	do {
+		mn = &(q->ring[cur]);
+		bi_flush_cache(&mn->meta);
+		if (!mn->meta.use) break;
+		ret_sz = mn->meta.size;
+		bi_dereference_area_aggressive(data, mn->data, ret_sz);
+		mn->meta.size = 0;
+		mn->meta.use  = 0;
+		bi_wb_cache(&mn->meta);
+		*pos = cur + 1;
+	} while (!spin);
+
+	return ret_sz;
+}
+
+int
+rpc_send(int node, void *data, size_t size);
+{
+	struct msg_queue *mq;
+	int *pos;
+
+//	printc("rpc send sender %d to %d id %d sz %d\n", caller, recv_node, memid, size);
+	mq  = (struct msg_queue *)get_send_ring(node);
+	pos = &(snt_pos.head[node][CORE_ID()]);
+
+	return rpc_send_ext(mq, pos, data, size);
+}
+
+size_t
+rpc_recv(int node, void *data, int spin)
+{
+	struct msg_queue *mq;
+	int *pos;
+
+//	printc("rpc recv node %d\n", caller);
+	mq  = (struct msg_queue *)get_recv_ring(node);
+	pos = &(rcv_pos.tail[node][CORE_ID()]);
+
+	return rpc_send_ext(mq, pos, data, size);
+}
+
+/***************  TODO sever side***/
+/******************  FIXME **********/
+
+/*
+size_t
+rpc_recv(int node, void *data, int spin)
 {
 	int caller = node_mem & 0xFFFF, memid = node_mem >> 16;
 	struct recv_ret *ret = (struct recv_ret *)ret_page[caller].addr;
@@ -61,6 +106,7 @@ rpc_recv(int node_mem, int spin)
 	} while(spin);
 	return NULL;
 }
+*/
 
 void
 rpc_init(int node_mem, vaddr_t untype, int size)
