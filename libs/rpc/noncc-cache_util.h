@@ -2,7 +2,7 @@
 #define NON_CC_CACHE_UTIL_H
 #ifdef ENABLE_NON_CC_OP
 
-#include <constant.h>
+#include "constant.h"
 
 static inline void
 bi_flush_cache(void *p)

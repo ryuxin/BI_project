@@ -1,8 +1,8 @@
 #ifndef BI_POINTER_H
 #define BI_POINTER_H
 
-#include <hw_util.h>
 #include <string.h>
+#include "hw_util.h"
 
 /*
  * read side interface.

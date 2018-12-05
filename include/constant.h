@@ -3,12 +3,17 @@
 
 /******** TODO: avoid same name of constant.h *****/
 
+/************** hardware setup ********/
 #define NUM_NODES 2
 #define NUM_CORE_PER_NODE 8
 #define NUM_ALL_CORES (NUM_NODES * NUM_CORE_PER_NODE)
 
 #define ENABLE_NON_CC_OP
 #define ENABLE_CLFLUSHOPT
+
+/******** RPC MSG **********/
+#define MAX_MSG_SIZE 256
+#define MSG_NUM 16
 
 #define CACHE_LINE 64
 #define PAGE_SIZE 4096
