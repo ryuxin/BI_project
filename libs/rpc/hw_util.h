@@ -1,11 +1,17 @@
 #ifndef HW_UTIL_H
 #define HW_UTIL_H
 
-#include <constant.h>
 #include <stdint.h>
+#include "constant.h"
 
 /**** TODO ***/
-/* gobal rdtsc, core id, node id */
+/* gobal rdtsc */
+
+extern int local_node_id;
+extern __thread int local_core_id;
+
+#define NODE_ID() (local_node_id)
+#define CORE_ID() (local_core_id)
 
 #define BI_ACCESS_ONCE(x)	(*(__volatile__  __typeof__(x) *)&(x))
 
@@ -38,7 +44,19 @@ bi_local_rdtsc(void)
 	return ((uint64_t)d << 32) | (uint64_t)a;
 }
 
-#include <cc-cache_util.h>
-#include <noncc-cache_util.h>
+static inline void
+setup_node_id(int nid)
+{
+	local_node_id = nid;
+}
+
+static inline void
+setup_core_id(int cid)
+{
+	local_core_id = cid;
+}
+
+#include "cc-cache_util.h"
+#include "noncc-cache_util.h"
 
 #endif /* HW_UTIL_H */
