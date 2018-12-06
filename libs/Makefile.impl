@@ -1,0 +1,15 @@
+CFILES  = $(wildcard *.c)
+COBJS   = $(patsubst %.c,%.o,$(CFILES))
+
+.PHONY: clean all
+
+all: $(CLIB)
+
+%.o:%.c
+	@$(CC) $(CFLAGS) -o $@ -c $<
+
+$(CLIB):$(COBJS)
+	@$(AR) cr $@ $^
+
+clean:
+	rm -f *.o *.d
