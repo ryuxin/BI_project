@@ -26,7 +26,7 @@ bi_dereference_area_lazy(void *dst, void *src, size_t sz)
 static inline void
 bi_dereference_area_aggressive(void *dst, void *src, size_t sz)
 {
-	clflush_range(src, src + sz);
+	clflush_range(src, sz);
 	bi_dereference_area_lazy(dst, src, sz);
 }
 
@@ -40,7 +40,7 @@ static inline void
 bi_publish_area(void *dst, void *src, size_t sz)
 {
 	memcpy(dst, src, sz);
-	clwb_range(dst, dst + sz);
+	clwb_range(dst, sz);
 }
 
 

@@ -1,6 +1,7 @@
 #ifndef HW_UTIL_H
 #define HW_UTIL_H
 
+#include <stddef.h>
 #include <stdint.h>
 #include "constant.h"
 
@@ -26,7 +27,7 @@ bi_inst_bar(void)
 {
 	int eax, edx, code = 0;
 	
-	asm volatile("cpuid"
+	__asm__ __volatile__ ("cpuid"
 		     :"=a"(eax),"=d"(edx)
 		     :"a"(code)
 		     :"ecx","ebx");
@@ -39,7 +40,7 @@ bi_local_rdtsc(void)
 {
 	unsigned long a, d;
 
-	asm volatile ("rdtscp" : "=a" (a), "=d" (d) : : "ebx", "ecx");
+	__asm__ __volatile__ ("rdtscp" : "=a" (a), "=d" (d) : : "ebx", "ecx");
 
 	return ((uint64_t)d << 32) | (uint64_t)a;
 }
