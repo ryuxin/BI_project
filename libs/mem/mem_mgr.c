@@ -36,7 +36,7 @@ init_global_memory(void *global_memory, char *s)
 	
 	addr = global_memory;
 	global_layout = (struct Mem_layout *)addr;
-	__init_magic_str(s);
+	if (s) __init_magic_str(s);
 	
 	addr = (void *)round_up_to_page(addr + sizeof(struct Mem_layout));
 	global_layout->rpc_area = addr;

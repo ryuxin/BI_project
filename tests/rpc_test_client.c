@@ -24,7 +24,7 @@ int main(void)
 	ftruncate(fd, SIZE);
 	mem = mmap(0, SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 	if (mem == MAP_FAILED) {
-		perror(mmap failed");
+		perror("mmap failed: ");
 		exit(-1);
 	}
 	init_global_memory(mem, "rpc simple tests");
