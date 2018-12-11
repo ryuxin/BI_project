@@ -74,14 +74,20 @@ set_prio(void)
 #define ITER       256
 #define MEM_ITEMS  (MEM_SZ/CACHE_LINE)
 #define SIZE	   (MEM_ITEMS * sizeof (struct cache_line) + 2*PAGE_SIZE + MEM_ITEMS*sizeof(int))
+#define LOCAL_MEM_TEST
 
 struct cache_line {
 	unsigned int v;
 	struct cache_line *next; /* random access */
 } __attribute__((aligned(CACHE_LINE)));
 
+#ifdef LOCAL_MEM_TEST
+struct cache_line mem[MEM_ITEMS];
+int rand_mem[MEM_ITEMS];
+#else
 struct cache_line *mem;
 int *rand_mem;
+#endif
 
 typedef enum {
 	SIZES,
@@ -225,6 +231,7 @@ int
 main(void)
 {
 //	set_prio();
+#ifndef LOCAL_MEM_TEST
 	char *file = "/lfs/cache_test";
 	int fd = open(file, O_CREAT | O_RDWR, 0666);
 	ftruncate(fd, SIZE);
@@ -232,6 +239,7 @@ main(void)
 	rand_mem = (int *)((char *)mem + MEM_ITEMS * sizeof (struct cache_line) + PAGE_SIZE);
 	memset(mem, 0, MEM_ITEMS * sizeof (struct cache_line));
 	memset(rand_mem, 0, MEM_ITEMS * sizeof(int));
+#endif
 //	printf("Cycles per cache-line of the operations last in the list of operations (sequential)\n\n");
 	init_random_access();
 
