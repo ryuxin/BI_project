@@ -5,28 +5,61 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <string.h>
+#include <stdarg.h>
+#include <errno.h>
+#include <math.h>
+#include <pthread.h>
 #define _GNU_SOURCE
 #include <sched.h>
 #include <sys/resource.h>
 #include <sys/types.h>
 #include <sys/mman.h>
-#include "rpc.h"
-#include "mem_mgr.h"
+#include "rpc_test_common.h"
 
-#define SIZE (1024*1024*1024)
-
-int main(void)
+static void
+rpc_test_client(struct Mem_layout *layout)
 {
-	char *file = "/lfs/cache_test";
-	int fd = open(file, O_CREAT | O_RDWR, 0666);
-	void *mem;
+	int test, r;
+	size_t s, snt_sz;
+	int id=0;
 
-	ftruncate(fd, SIZE);
-	mem = mmap(0, SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-	if (mem == MAP_FAILED) {
-		perror("mmap failed: ");
-		exit(-1);
+	snt_sz = sizeof(struct Rpc_test_msg);
+	printf("rpc test client %s\n", layout->magic);
+	while (1) {
+		scanf("%d", &test);
+		if (test == 0) {
+			sprintf(test_snt_msg.message, "exit");
+			r = rpc_send(0, &test_msg, snt_sz);
+			assert(r == 0);
+			break;
+		}
+
+		sprintf(test_snt_msg.message, "rpc test send %d", id++);
+		r = rpc_send(0, &test_snt_msg, snt_sz);
+		assert(r == 0);
+
+		s = rpc_recv(0, &test_rcv_msg, 1);
+		assert(s == snt_sz);
+		printf("recv %s\n", test_rcv_msg.message);
 	}
-	init_global_memory(mem, "rpc simple tests");
+}
+
+int
+main(int argc, char *argv[])
+{
+	void *mem;
+	struct Mem_layout *layout;
+
+	test_parse_args(argc, argv);
+	mem = bi_global_init_slave(num_node, id_node, 
+								TEST_FILE_NAME, TEST_FILE_SIZE, TEST_FILE_ADDR);
+	layout = (struct Mem_layout *)mem;
+
+	if (test_case == 1) {
+		non_cc_test(layout);
+		rpc_test_client(layout);
+	} else {
+		return 0;
+	}
 	return 0;
 }
