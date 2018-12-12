@@ -74,7 +74,7 @@ set_prio(void)
 #define LOCAL_MEM_TEST
 
 #ifdef LOCAL_MEM_TEST
-char mem[MEM_SZ];
+char mem[MEM_SZ] __attribute__((aligned(CACHE_LINE)));
 #else
 char *mem;
 #endif
