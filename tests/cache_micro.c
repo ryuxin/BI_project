@@ -73,12 +73,12 @@ set_prio(void)
 #define ITER       256
 #define LOCAL_MEM_TEST
 
+char tmem[MEM_SZ];
 #ifdef LOCAL_MEM_TEST
 char mem[MEM_SZ] __attribute__((aligned(CACHE_LINE)));
 #else
 char *mem;
 #endif
-char tmem[MEM_SZ];
 
 typedef enum {
 	SIZES,
@@ -183,8 +183,8 @@ main(void)
 	int fd = open(file, O_CREAT | O_RDWR, 0666);
 	ftruncate(fd, MEM_SZ);
 	mem = mmap(0, MEM_SZ, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-	memset(mem, 0, MEM_SZ);
 #endif
+	memset(mem, 0, MEM_SZ);
 //	printf("Cycles per cache-line of the operations last in the list of operations (sequential)\n\n");
 
 	exec("Sizes", (access_t[1]){SIZES}, 1);

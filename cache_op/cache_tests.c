@@ -73,8 +73,7 @@ set_prio(void)
 #define MEM_SZ     (1<<26) 	/* 64MB */
 #define ITER       256
 #define MEM_ITEMS  (MEM_SZ/CACHE_LINE)
-#define SIZE	   (MEM_ITEMS * sizeof (struct cache_line) + 2*PAGE_SIZE + MEM_ITEMS*sizeof(int))
-#define LOCAL_MEM_TEST
+//#define LOCAL_MEM_TEST
 
 struct cache_line {
 	unsigned int v;
@@ -83,11 +82,10 @@ struct cache_line {
 
 #ifdef LOCAL_MEM_TEST
 struct cache_line mem[MEM_ITEMS];
-int rand_mem[MEM_ITEMS];
 #else
 struct cache_line *mem;
-int *rand_mem;
 #endif
+int rand_mem[MEM_ITEMS];
 
 typedef enum {
 	SIZES,
@@ -163,10 +161,12 @@ walk(access_t how, pattern_t pat, size_t sz)
 			break;
 		}
 		case RANDOM: {
-			struct cache_line *next = line->next;
+			//struct cache_line *next = line->next;
 
-			if (how == FRF) clflushopt(line);
-			line = next;
+			//if (how == FRF) clflushopt(line);
+			//line = next;
+			line = &mem[rand_mem[i]];
+//			line = line->next;
 			break;
 		}
 		}
@@ -234,20 +234,20 @@ main(void)
 #ifndef LOCAL_MEM_TEST
 	char *file = "/lfs/cache_test";
 	int fd = open(file, O_CREAT | O_RDWR, 0666);
-	ftruncate(fd, SIZE);
-	mem = mmap(0, SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-	rand_mem = (int *)((char *)mem + MEM_ITEMS * sizeof (struct cache_line) + PAGE_SIZE);
-	memset(mem, 0, MEM_ITEMS * sizeof (struct cache_line));
-	memset(rand_mem, 0, MEM_ITEMS * sizeof(int));
+	ftruncate(fd, MEM_SZ);
+	mem = mmap(0, MEM_SZ, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 #endif
 //	printf("Cycles per cache-line of the operations last in the list of operations (sequential)\n\n");
+	memset(mem, 0, MEM_ITEMS * sizeof (struct cache_line));
 	init_random_access();
 
 	exec("Sizes", (access_t[1]){SIZES}, 1, SEQUENTIAL);
 
 //	exec("Warmup", (access_t[3]){READ, READ, READ}, 3, SEQUENTIAL);
-//	exec("Read", (access_t[2]){READ, READ}, 2, SEQUENTIAL);
-	exec("Read", (access_t[2]){READ, READ}, 2, RANDOM);
+//	exec("single seq Read", (access_t[1]){READ}, 1, SEQUENTIAL);
+	exec("seq Read", (access_t[2]){READ, READ}, 2, SEQUENTIAL);
+//	exec("single andom Read", (access_t[1]){READ}, 1, RANDOM);
+	exec("random Read", (access_t[2]){READ, READ}, 2, RANDOM);
 //	exec("Flush/Read/Flush", (access_t[2]){READ, FRF}, 2, RANDOM);
 	exec("Flush/Read", (access_t[2]){READ, FR}, 2, RANDOM);
 	//exec("Modify", (access_t[2]){READ, WRITE}, 2, SEQUENTIAL);

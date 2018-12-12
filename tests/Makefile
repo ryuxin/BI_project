@@ -12,7 +12,7 @@ cache_micro:
 	@$(CC) cache_micro.c $(CFLAGS) -o cache_micro.test $(LDFLAGS)
 
 flush_period:
-	@$(CC) flush_period.c $(CFLAGS) -o flush_period.test $(LDFLAGS)
+	@$(CC) flush_period.c $(CFLAGS) -o flush_period.test $(LDFLAGS) -lrt
 
 clean:
 	rm -rf *.o *.d *.test

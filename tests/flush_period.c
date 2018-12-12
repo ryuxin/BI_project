@@ -30,8 +30,6 @@ volatile int ncache, ntimer;
 
 void timer_handler(int a)
 {
-	int i;
-	char *pos = mem;
 	(void)a;
 
 	ntick++;
@@ -101,6 +99,7 @@ void bench(void)
 
 int main(int argc, char *argv[])
 {
+	int r;
 #ifndef LOCAL_MEM_TEST
 	char *file = "/lfs/cache_test";
 	int fd = open(file, O_CREAT | O_RDWR, 0666);
@@ -115,7 +114,7 @@ int main(int argc, char *argv[])
 	}
 	ntimer   = atoi(argv[1]);
 	ncache   = atoi(argv[2]);
-	if (ncache > FILE_SIZE/CACHE_LINE) {
+	if (ncache > MEM_SZ/CACHE_LINE) {
 		printf("working set is larger than max file size\n");
 		exit(-1);
 	}
@@ -133,8 +132,10 @@ int main(int argc, char *argv[])
 	if (r) goto ret;
 	bench();
 ret:
-	munmap(map_addr, FILE_SIZE);
+#ifndef LOCAL_MEM_TEST
+	munmap(mem, MEM_SZ);
 	close(fd);
+#endif
 	return 0;
 }
 
