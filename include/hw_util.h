@@ -9,6 +9,7 @@
 /* gobal rdtsc */
 
 extern int local_node_id;
+extern int num_node_in_use;
 extern __thread int local_core_id;
 
 #define NODE_ID() (local_node_id)
@@ -39,9 +40,7 @@ static inline uint64_t
 bi_local_rdtsc(void)
 {
 	unsigned long a, d;
-
 	__asm__ __volatile__ ("rdtscp" : "=a" (a), "=d" (d) : : "ebx", "ecx");
-
 	return ((uint64_t)d << 32) | (uint64_t)a;
 }
 
@@ -49,6 +48,12 @@ static inline void
 setup_node_id(int nid)
 {
 	local_node_id = nid;
+}
+
+static inline void
+setup_node_num(int num)
+{
+	num_node_in_use = num;
 }
 
 static inline void
