@@ -181,7 +181,7 @@ walk(access_t how, pattern_t pat, size_t sz)
 		case SIZES:    return;
 		}
 	}
-	if (how == FLUSHOPT || how == FLUSH) asm volatile ("mfence"); /* serialize */
+	if (how == FLUSHOPT || how == FLUSH) asm volatile ("sfence"); /* serialize */
 }
 
 /*

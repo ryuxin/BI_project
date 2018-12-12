@@ -23,7 +23,6 @@ rpc_test_server(struct Mem_layout *layout)
 	size_t s;
 	int id=0;
 
-	snt_sz = sizeof(struct Rpc_test_msg);
 	printf("rpc test server %s\n", layout->magic);
 	while (1) {
 		s = rpc_recv(1, &test_rcv_msg, 1);

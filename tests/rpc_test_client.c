@@ -29,7 +29,7 @@ rpc_test_client(struct Mem_layout *layout)
 		scanf("%d", &test);
 		if (test == 0) {
 			sprintf(test_snt_msg.message, "exit");
-			r = rpc_send(0, &test_msg, snt_sz);
+			r = rpc_send(0, &test_snt_msg, snt_sz);
 			assert(r == 0);
 			break;
 		}

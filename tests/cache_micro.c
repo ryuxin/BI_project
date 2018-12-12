@@ -119,8 +119,6 @@ rdtsc(void)
 static inline void
 walk(access_t how, size_t sz)
 {
-	unsigned int i;
-
 	assert(sz >= CACHE_LINE);
 
 	switch(how) {
@@ -170,8 +168,8 @@ exec(char *name, access_t *how_ops, size_t nops)
 			end   = rdtsc();
 			tot  += end-start;
 		}
-		if (how_ops[nops-1] != SIZES) printf("%11lu ", (tot-overhead)/ITER;
-		else                          printf("%11lu ", sizes[i]);
+		if (how_ops[nops-1] != SIZES) printf("%lu ", (tot-overhead)/ITER);
+		else                          printf("%lu ", sizes[i]);
 	}
 	printf("\n");
 }
@@ -180,7 +178,6 @@ int
 main(void)
 {
 //	set_prio();
-	size_t i;
 #ifndef LOCAL_MEM_TEST
 	char *file = "/lfs/cache_test";
 	int fd = open(file, O_CREAT | O_RDWR, 0666);
@@ -191,6 +188,7 @@ main(void)
 //	printf("Cycles per cache-line of the operations last in the list of operations (sequential)\n\n");
 
 	exec("Sizes", (access_t[1]){SIZES}, 1);
+
 	exec("Read + Read", (access_t[2]){READ, READ}, 2);
 	exec("Modify + Read", (access_t[2]){WRITE, READ}, 2);
 	exec("Flush + Read", (access_t[2]){FLUSHOPT, READ}, 2);
