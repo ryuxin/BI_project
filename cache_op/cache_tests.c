@@ -140,13 +140,14 @@ init_random_access(void)
 	}
 	for (i = 0 ; i < MEM_ITEMS ; i++) {
 		mem[i].next = &mem[rand_mem[i]];
+		mem[i].v = 1;
 	}
 }
 
 /* in global scope to force the compiler to emit the writes */
 unsigned int accum = 0;
 
-static inline void
+void
 walk(access_t how, pattern_t pat, size_t sz)
 {
 	unsigned int i;
@@ -172,9 +173,9 @@ walk(access_t how, pattern_t pat, size_t sz)
 		}
 
 		switch(how) {
-		case READ:     accum    = line->v; break;
+		case READ:     accum   += line->v; break;
 		case FR:
-		case FRF:      update(line); accum = line->v; break;
+		case FRF:      update(line); accum += line->v; break;
 		case WRITE:    line->v += i;       break;
 		case FLUSH:    clflush(line);      break;
 		case FLUSHOPT: clflushopt(line);   break;
@@ -210,7 +211,7 @@ exec(char *name, access_t *how_ops, size_t nops, pattern_t pat)
 	printf("%20s\t", name);
 #endif
 	for (i = 0 ; i < sizeof(sizes)/sizeof(unsigned long) ; i++) {
-		for (iter = 0 ; iter < ITER ; iter++) {
+		for (tot = 0, iter = 0 ; iter < ITER ; iter++) {
 			unsigned int j;
 
 			for (j = 0 ; j < nops-1 ; j++) {
