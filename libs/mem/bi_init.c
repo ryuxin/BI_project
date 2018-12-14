@@ -43,7 +43,7 @@ bi_global_init_master(int node_num, int node_id, const char *test_file, long fil
 	void *mem;
 
 	mem = __global_init_share(node_num, node_id, test_file, file_size, map_addr);
-	memset(mem, 0, file_size);
+	// memset(mem, 0, file_size);
 	init_global_memory(mem, test_string);
 	clwb_range(mem, file_size);
 

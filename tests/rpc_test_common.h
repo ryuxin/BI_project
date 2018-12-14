@@ -80,16 +80,16 @@ non_cc_test(struct Mem_layout *layout)
 		scanf("%d", &test);
 		if (test == 0) break;
 		switch (test) {
-		case '1':
+		case 1:
 			printf("magic %s\n", layout->magic);
 			break;				
-		case '2':
+		case 2:
 			strcpy(layout->magic, "modified");
 			break;
-		case '3':
+		case 3:
 			bi_flush_cache(layout->magic);
 			break;
-		case '4':
+		case 4:
 			bi_wb_cache(layout->magic);
 			break;
 		}

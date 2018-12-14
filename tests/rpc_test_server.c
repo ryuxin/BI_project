@@ -44,8 +44,8 @@ main(int argc, char *argv[])
 
 	test_parse_args(argc, argv);
 	mem = bi_global_init_master(num_node, id_node, 
-								TEST_FILE_NAME, TEST_FILE_SIZE, TEST_FILE_ADDR, 
-								"rpc simple tests");
+				    TEST_FILE_NAME, TEST_FILE_SIZE, TEST_FILE_ADDR, 
+				    "rpc simple tests");
 	layout = (struct Mem_layout *)mem;
 
 	if (test_case == 1) {

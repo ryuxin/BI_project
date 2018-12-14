@@ -77,13 +77,13 @@ set_prio(void)
 
 struct cache_line {
 	unsigned int v;
-	struct cache_line *next; /* random access */
+	volatile struct cache_line *next; /* random access */
 } __attribute__((aligned(CACHE_LINE)));
 
 #ifdef LOCAL_MEM_TEST
-struct cache_line mem[MEM_ITEMS];
+volatile struct cache_line mem[MEM_ITEMS];
 #else
-struct cache_line *mem;
+volatile struct cache_line *mem;
 #endif
 int rand_mem[MEM_ITEMS];
 
@@ -151,7 +151,7 @@ void
 walk(access_t how, pattern_t pat, size_t sz)
 {
 	unsigned int i;
-	struct cache_line *line = &mem[0];
+	volatile struct cache_line *line = &mem[0];
 
 	assert(sz >= CACHE_LINE);
 	for (i = 0 ; i < sz/CACHE_LINE ; i++) {
@@ -239,7 +239,7 @@ main(void)
 	mem = mmap(0, MEM_SZ, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 #endif
 //	printf("Cycles per cache-line of the operations last in the list of operations (sequential)\n\n");
-	memset(mem, 0, MEM_ITEMS * sizeof (struct cache_line));
+	memset((void *)mem, 0, MEM_ITEMS * sizeof (struct cache_line));
 	init_random_access();
 
 	exec("Sizes", (access_t[1]){SIZES}, 1, SEQUENTIAL);

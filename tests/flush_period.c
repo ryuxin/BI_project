@@ -19,9 +19,9 @@
 #define LOCAL_MEM_TEST
 
 #ifdef LOCAL_MEM_TEST
-char mem[MEM_SZ] __attribute__((aligned(CACHE_LINE)));
+volatile char mem[MEM_SZ] __attribute__((aligned(CACHE_LINE)));
 #else
-char *mem;
+volatile char *mem;
 #endif
 char tmem[2*CACHE_LINE];
 
@@ -34,7 +34,7 @@ void timer_handler(int a)
 
 	ntick++;
 	if (ntimer != MAGIC_TIMER) {
-		clflush_range(mem, ncache * CACHE_LINE);
+		clflush_range((void *)mem, ncache * CACHE_LINE);
 	}
 	if (ntimer == MAGIC_TIMER || ntick == (unsigned long long)NUM_SECOND*ntimer) {
 		printf("#timer %d #cache %d thput %llu\n", ntimer, ncache, nread/NUM_SECOND);
@@ -85,7 +85,7 @@ void bench(void)
 	char *pos;
 
 	while (!done) {
-		pos = mem;
+		pos = (char *)mem;
 		for (i=0; i<ncache; i++) {
 #ifdef ENABLE_ALWAYS_FLUSH
 			clflush_range(pos, CACHE_LINE);

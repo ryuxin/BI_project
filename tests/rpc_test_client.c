@@ -52,7 +52,7 @@ main(int argc, char *argv[])
 
 	test_parse_args(argc, argv);
 	mem = bi_global_init_slave(num_node, id_node, 
-								TEST_FILE_NAME, TEST_FILE_SIZE, TEST_FILE_ADDR);
+				   TEST_FILE_NAME, TEST_FILE_SIZE, TEST_FILE_ADDR);
 	layout = (struct Mem_layout *)mem;
 
 	if (test_case == 1) {

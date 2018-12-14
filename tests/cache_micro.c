@@ -75,9 +75,9 @@ set_prio(void)
 
 char tmem[MEM_SZ];
 #ifdef LOCAL_MEM_TEST
-char mem[MEM_SZ] __attribute__((aligned(CACHE_LINE)));
+volatile char mem[MEM_SZ] __attribute__((aligned(CACHE_LINE)));
 #else
-char *mem;
+volatile char *mem;
 #endif
 
 typedef enum {
@@ -122,11 +122,11 @@ walk(access_t how, size_t sz)
 	assert(sz >= CACHE_LINE);
 
 	switch(how) {
-	case READ:        memcpy(tmem, mem, sz);            break;
-	case WRITE:       memcpy(mem, tmem, sz);            break;
-	case FLUSH:       clflush_range_slow(mem, sz);      break;
-	case CLWB:        clwb_range(mem, sz);              break;
-	case FLUSHOPT:    clflush_range(mem, sz);           break;
+	case READ:        memcpy(tmem, (void *)mem, sz);            break;
+	case WRITE:       memcpy((void *)mem, tmem, sz);            break;
+	case FLUSH:       clflush_range_slow((void *)mem, sz);      break;
+	case CLWB:        clwb_range((void *)mem, sz);              break;
+	case FLUSHOPT:    clflush_range((void *)mem, sz);           break;
 	case SIZES:    return;
 	}
 }
@@ -184,7 +184,7 @@ main(void)
 	ftruncate(fd, MEM_SZ);
 	mem = mmap(0, MEM_SZ, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 #endif
-	memset(mem, 0, MEM_SZ);
+	memset((void *)mem, 0, MEM_SZ);
 //	printf("Cycles per cache-line of the operations last in the list of operations (sequential)\n\n");
 
 	exec("Sizes", (access_t[1]){SIZES}, 1);
