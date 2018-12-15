@@ -47,7 +47,7 @@ __init_parsec_times(struct Per_core_info *parsecs, void *addr)
 static inline void *
 __init_quies_rings(struct Per_node_info *quies, void *addr)
 {
-	int i, j;
+	int i;
 	for(i=0; i<NUM_NODES; i++) {
 		quies->info[i] = addr;
 		qsc_ring_struct_init((struct bi_qsc_ring *)(quies->info[i]));
@@ -59,7 +59,7 @@ __init_quies_rings(struct Per_node_info *quies, void *addr)
 static inline void *
 __init_mem_free_lists(struct Per_node_info *mem_free, void *addr)
 {
-	int i, j;
+	int i;
 	for(i=0; i<NUM_NODES; i++) {
 		mem_free->info[i] = addr;
 		addr += sizeof(struct Free_mem_list);
@@ -70,7 +70,7 @@ __init_mem_free_lists(struct Per_node_info *mem_free, void *addr)
 static inline void *
 __init_mem_start_addr(struct Per_node_info *mem_addr, void *addr)
 {
-	int i, j;
+	int i;
 	for(i=0; i<NUM_NODES; i++) {
 		mem_addr->info[i] = addr;
 		addr += MEM_MGR_OBJ_SZ * MEM_MGR_OBJ_NUM;
@@ -87,7 +87,7 @@ mem_mgr_init(void)
 
 	lh   = get_mem_free_list(NODE_ID());
 	addr = get_mem_start_addr(NODE_ID());
-	assert(start_addr);
+	assert(addr);
 
 	ps_list_head_init(&free_mem_head);
 	for(i=0; i<MEM_MGR_OBJ_NUM; i++) {
@@ -152,7 +152,7 @@ init_global_memory(void *global_memory, char *s)
 
 	addr = (void *)round_up_to_page(addr);
 	global_layout->data_area = addr;
-	addr = __init_mem_start_addr(&global_layout->mem_start_addr, addr)
+	addr = __init_mem_start_addr(&global_layout->mem_start_addr, addr);
 
 	printf("magic string %s\n", global_layout->magic);
 	printf("start %p end %p tot sz %lu\n", global_memory, addr, (unsigned long)(addr - global_memory));

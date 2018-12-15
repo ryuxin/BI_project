@@ -10,9 +10,9 @@ bi_global_rtdsc()
 {
 	if (NODE_ID() == 0) {
 		global_layout->time.tsc = bi_local_rdtsc();
-		clwb_range(global_layout->time, CACHE_LINE);
+		clwb_range(&global_layout->time, CACHE_LINE);
 	} else {
-		clflush_range(global_layout->time, CACHE_LINE);
+		clflush_range(&global_layout->time, CACHE_LINE);
 	}
 	return global_layout->time.tsc;
 }

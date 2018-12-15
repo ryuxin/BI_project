@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <assert.h>
 #include "constant.h"
 
 extern int local_node_id;

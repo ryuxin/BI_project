@@ -1,34 +1,37 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "bi_smr.h"
 
-static inline struct ps_mheader *
+static inline struct quies_item *
 qsc_ring_peek(struct bi_qsc_ring *ql)
 {
-    return ql->ring[ql->head];
+	return &(ql->ring[ql->head]);
 }
 
 static inline struct quies_item *
 qsc_ring_dequeue(struct bi_qsc_ring *ql)
 {
-    struct quies_item *ret;
+	struct quies_item *ret;
 
 	if (ql->head == ql->tail) return NULL;
-	ret      = ql->ring[ql->head];
-    ql->head = (ql->head+1) % MAX_QUI_RING_LEN;
-    return ret;
+	ret      = &(ql->ring[ql->head]);
+	ql->head = (ql->head+1) % MAX_QUI_RING_LEN;
+	return ret;
 }
 
 static inline void
 qsc_ring_enqueue(struct bi_qsc_ring *ql, struct ps_mheader *m)
 {
 	void *addr;
-    if (ql->head == (ql->tail + 1) % MAX_QUI_RING_LEN) {
-        printf("quisence ring full %d\n", MAX_QUI_RING_LEN);
-        assert(0);
-    }
-    ql->ring[ql->tail].mh = m;
-    ql->ring[ql->tail].sz = bi_slab_objmem(m->s->si);
+	if (ql->head == (ql->tail + 1) % MAX_QUI_RING_LEN) {
+		printf("quisence ring full %d\n", MAX_QUI_RING_LEN);
+		assert(0);
+	}
+	ql->ring[ql->tail].mh = m;
+	ql->ring[ql->tail].sz = bi_slab_objmem(m->slab->si);
 	addr                  = &(ql->ring[ql->tail]);
-    ql->tail              = (ql->tail+1) % MAX_QUI_RING_LEN;
+	ql->tail              = (ql->tail+1) % MAX_QUI_RING_LEN;
 	clwb_range_opt(addr, CACHE_LINE);
 	clwb_range(ql, CACHE_LINE);
 }
@@ -37,20 +40,17 @@ static inline void
 qsc_ring_flush(struct bi_qsc_ring *ql)
 {
 #define FETCH_LEN 32
-    int i, j;
-    struct quies_item *s;
-    item * it;
-    uint32_t hv;
+	int i, j;
+	struct quies_item *s;
 
-    for(i=ql->head; i != ql->tail; i = (i+1) % MAX_QUI_RING_LEN) {
-        s = ql->ring[i];
-        if (i % FETCH_LEN == 0) {
-            j = (i + FETCH_LEN) % MAX_QUI_RING_LEN;
-            __builtin_prefetch(&(ql->ring[j]), 0, 0);
-        }
-        if (s == NULL) continue;
-        clflush_range_opt(s->mh, s->sz);
-    }
+	for(i=ql->head; i != ql->tail; i = (i+1) % MAX_QUI_RING_LEN) {
+		s = &(ql->ring[i]);
+		if (i % FETCH_LEN == 0) {
+			j = (i + FETCH_LEN) % MAX_QUI_RING_LEN;
+			__builtin_prefetch(&(ql->ring[j]), 0, 0);
+		}
+		clflush_range_opt(s->mh, s->sz);
+	}
 }
 
 static inline int
@@ -65,7 +65,6 @@ bi_smr_flush(void)
 
 	curr          = NODE_ID();
 	tot_cpu       = get_active_node_num();
-	tot_core      = get_active_core_num();
 	for (i = 1 ; i < tot_cpu; i++) {
 		/* Make sure we don't all hammer core 0... */
 		qsc_cpu = (curr + i) % tot_cpu;
@@ -78,11 +77,11 @@ bi_smr_flush(void)
 	for (r=0, i = 1 ; i < tot_cpu; i++) {
 		qsc_cpu = (curr + i) % tot_cpu;
 		ql = get_quies_ring(qsc_cpu);
-        r += (MAX_QUI_RING_LEN + ql->tail - ql->head) % MAX_QUI_RING_LEN;
-        qsc_ring_flush(ql);
+		r += (MAX_QUI_RING_LEN + ql->tail - ql->head) % MAX_QUI_RING_LEN;
+		qsc_ring_flush(ql);
 	}
 	bi_mb();
-    return r;
+	return r;
 }
 
 uint64_t
@@ -129,10 +128,9 @@ bi_smr_reclaim(void)
 	struct bi_qsc_ring *ql = get_quies_ring(NODE_ID());
 	struct quies_item *a   = qsc_ring_peek(ql);
 	int i=0;
-	ps_tsc_t qsc, tsc;
+	ps_tsc_t qsc;
 
-    if (!a) return i;
-	tsc  = a->mh->tsc_free;
+	if (!a) return i;
 	qsc  = bi_quiesce();
 	qsc -= QUISE_FLUSH_PERIOD;
 
@@ -142,7 +140,7 @@ bi_smr_reclaim(void)
 
 		a = qsc_ring_dequeue(ql);
 		bi_slab_free(__ps_mhead_mem(a->mh));
-        i++;
+		i++;
 	}
 	clwb_range(ql, CACHE_LINE);
 
@@ -157,7 +155,7 @@ bi_smr_free(void *buf)
 
 	tsc = bi_global_rtdsc();
 	__ps_mhead_setfree(m, tsc);
-    qsc_ring_enqueue(get_quies_ring(NODE_ID()), m);
+	qsc_ring_enqueue(get_quies_ring(NODE_ID()), m);
 }
 
 void
@@ -176,8 +174,6 @@ bi_enter(void)
 	 */
 	ps->time_out = curr_time - 1;
 	clwb_range(ps, sizeof(struct parsec));
-
-	return;
 }
 
 void
@@ -193,6 +189,4 @@ bi_exit(void)
 	bi_ccb();
 	ps->time_out = ps->time_in + 1;
 	clwb_range(ps, sizeof(struct parsec));
-
-	return;
 }

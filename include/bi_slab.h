@@ -7,6 +7,7 @@
 /* #define PS_SLAB_DEBUG 1 */
 
 typedef uint64_t ps_tsc_t; 	/* our time-stamp counter representation */
+typedef ps_tsc_t ps_free_token_t;
 struct ps_slab_info;
 
 /* The header for a slab. */
@@ -15,7 +16,7 @@ struct ps_slab {
 	size_t memsz;	/* size of backing memory */
 	struct Free_mem_item *mem_item;
 	struct ps_slab_info *si;
-	char   pad[PS_CACHE_LINE-3*sizeof(void *)+sizeof(size_t)];
+	char   pad[CACHE_LINE-3*sizeof(void *)+sizeof(size_t)];
 
 	/* Frequently modified data on the owning core... */
 	struct ps_mheader *freelist; /* free objs in this slab */
@@ -98,11 +99,11 @@ static inline int
 bi_slab_isempty(struct ps_slab_info *si)
 { return si->nslabs; }
 
-inline size_t
+static inline size_t
 bi_slab_objmem(struct ps_slab_info *si)
 { return __ps_slab_objmemsz(si->obj_sz); }
 
-inline size_t
+static inline size_t
 bi_slab_nobjs(struct ps_slab_info *si)
 { return __ps_slab_max_nobjs(si->obj_sz, MEM_MGR_OBJ_SZ, sizeof(struct ps_slab)); }
 

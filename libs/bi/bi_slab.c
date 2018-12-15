@@ -46,8 +46,8 @@ __slab_freelist_rem(struct ps_slab_freelist *fl, struct ps_slab *s)
 {
 	assert(s && fl);
 	if (fl->list == s) {
-		if (ps_list_empty(s, list)) fl->list = NULL;
-		else                        fl->list = ps_list_first(s, list);
+		if (ps_list_singleton(s, list)) fl->list = NULL;
+		else                        fl->list = ps_list_next(s, list);
 	}
 	ps_list_rem(s, list);
 }
@@ -56,7 +56,7 @@ static void
 __slab_freelist_add(struct ps_slab_freelist *fl, struct ps_slab *s)
 {
 	assert(s && fl);
-	assert(ps_list_empty(s, list));
+	assert(ps_list_singleton(s, list));
 	assert(s != fl->list);
 	if (fl->list) ps_list_add(fl->list, s, list);
 	fl->list = s;
@@ -113,9 +113,8 @@ __ps_slab_mem_free(void *buf, size_t allocsz, size_t headoff)
 	struct ps_slab *s;
 	struct ps_mheader *h, *next;
 	struct ps_slab_info *si;
-	unsigned int max_nobjs = __ps_slab_max_nobjs(obj_sz, allocsz, headoff);
 	struct ps_slab_freelist *fl, *el;
-	assert(__ps_slab_objmemsz(obj_sz) + headoff <= allocsz);
+	unsigned int max_nobjs;
 
 	h = __ps_mhead_get(buf);
 	assert(!__ps_mhead_isfree(h)); /* freeing freed memory? */
@@ -123,6 +122,9 @@ __ps_slab_mem_free(void *buf, size_t allocsz, size_t headoff)
 	assert(s);
 	si = s->si;
 	assert(si);
+	assert(__ps_slab_objmemsz(si->obj_sz) + headoff <= allocsz);
+	assert(si->nodeid == NODE_ID());
+	max_nobjs = __ps_slab_max_nobjs(si->obj_sz, allocsz, headoff);
 
 	__ps_mhead_setfree(h, SLAB_FREE);
 	next        = s->freelist;
@@ -133,16 +135,13 @@ __ps_slab_mem_free(void *buf, size_t allocsz, size_t headoff)
 		/* remove from the freelist */
 		__slab_freelist_rem(&si->fl, s);
 		si->nslabs--;
-		assert(ps_list_empty(s, list));
-		s->list.next = NULL;
 	 	ps_slab_deffree(s);
-	}
-	else if (s->nfree == 1) {
+	} else if (s->nfree == 1) {
 		fl = &si->fl;
 		el = &si->el;
 		__slab_freelist_rem(el, s);
 		/* add back onto the freelists */
-		assert(ps_list_empty(s, list));
+		assert(ps_list_singleton(s, list));
 		assert(s->memory && s->freelist);
 		__slab_freelist_add(fl, s);
 	}
@@ -156,7 +155,7 @@ __ps_slab_mem_alloc(struct ps_slab_info *si, size_t allocsz, size_t headoff)
 {
 	struct ps_slab      *s;
 	struct ps_mheader   *h;
-	assert(obj_sz + headoff <= allocsz);
+	assert(si->obj_sz + headoff <= allocsz);
 
 	s = si->fl.list;
 	if (unlikely(!s)) {
@@ -164,7 +163,7 @@ __ps_slab_mem_alloc(struct ps_slab_info *si, size_t allocsz, size_t headoff)
 		s = ps_slab_defalloc(allocsz);
 		if (unlikely(!s)) return NULL;
 		
-		__ps_slab_init(s, si, allocsz, headoff);
+		__ps_slab_init(si, s, allocsz, headoff);
 		si->nslabs++;
 		assert(s->memory && s->freelist);
 	}
@@ -180,7 +179,7 @@ __ps_slab_mem_alloc(struct ps_slab_info *si, size_t allocsz, size_t headoff)
 	/* remove from the freelist */
 	if (s->nfree == 0) {
 		__slab_freelist_rem(&si->fl, s);
-		assert(ps_list_empty(s, list));
+		assert(ps_list_singleton(s, list));
 		__slab_freelist_add(&si->el, s);
 	}
 	assert(!__ps_mhead_isfree(h));
@@ -218,6 +217,5 @@ bi_slab_alloc(struct ps_slab_info *si)
 void
 bi_slab_free(void *buf)
 {
-	assert(si->nodeid == NODE_ID());
 	__ps_slab_mem_free(buf, MEM_MGR_OBJ_SZ, sizeof(struct ps_slab));
 }
