@@ -25,6 +25,9 @@
 #define unlikely(x)    __builtin_expect(!!(x), 0)
 #endif
 
+/******** MEM MGR ************/
+#define MEM_MGR_OBJ_SZ  (128*PAGE_SIZE)
+#define MEM_MGR_OBJ_NUM (16)
 #define round_to_pow2(x, pow2)    (((unsigned long)(x))&(~((pow2)-1)))
 #define round_up_to_pow2(x, pow2) (round_to_pow2(((unsigned long)x)+(pow2)-1, (pow2)))
 #define round_to_cacheline(x)     round_to_pow2(x, CACHE_LINE)
