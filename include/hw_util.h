@@ -5,11 +5,9 @@
 #include <stdint.h>
 #include "constant.h"
 
-/**** TODO ***/
-/* gobal rdtsc */
-
 extern int local_node_id;
 extern int num_node_in_use;
+extern int num_core_in_use;
 extern __thread int local_core_id;
 
 #define NODE_ID() (local_node_id)
@@ -21,6 +19,8 @@ extern __thread int local_core_id;
 #define bi_wmb()     __asm__ __volatile__ ("sfence"::: "memory")
 #define bi_mb()      __asm__ __volatile__ ("mfence":::"memory")
 #define bi_ccb()     __asm__ __volatile__ ("" ::: "memory")
+
+uint64_t bi_global_rtdsc();
 
 /* x86 cpuid instruction barrier. */
 static inline void
@@ -60,6 +60,26 @@ static inline void
 setup_core_id(int cid)
 {
 	local_core_id = cid;
+}
+
+static inline void
+setup_core_num(int num)
+{
+	num_core_in_use = num;
+}
+
+static inline int
+get_active_node_num(void)
+{
+	assert(num_node_in_use);
+	return num_node_in_use;
+}
+
+static inline int
+get_active_core_num(void)
+{
+	assert(num_core_in_use);
+	return num_core_in_use;
 }
 
 #include "cc-cache_util.h"

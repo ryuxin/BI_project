@@ -17,6 +17,13 @@ bi_wb_cache(void *p)
 }
 
 static inline void
+clflush_range_opt(void *s, size_t sz)
+{
+	(void)s;
+	(void)sz;
+}
+
+static inline void
 clflush_range(void *s, size_t sz)
 {
 	(void)s;
