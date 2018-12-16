@@ -28,6 +28,13 @@ rpc_area_tot_sz()
 	return 2*NUM_NODES*NUM_NODES*NUM_CORE_PER_NODE*sizeof(struct msg_queue);
 }
 
+static inline void
+msg_queue_struct_init(struct msg_queue *p)
+{
+	int i;
+	for(i=0; i<MSG_NUM; i++) p->ring[i].meta.use = 0;
+}
+
 /* clients send a message with data and size to server on node */
 int rpc_send(int node, void *data, size_t size);
 /* clients receive a message from server on node, return size and copy message to data */ 
