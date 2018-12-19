@@ -18,13 +18,14 @@
 
 /************ TODO: init active node and core number ***********/
 static void *
-__global_init_share(int node_num, int node_id, const char *test_file, long file_size, void *map_addr)
+__global_init_share(int node_id, int node_num, int core_num, const char *test_file, long file_size, void *map_addr)
 {
 	int fd;
 	void *mem;
 
 	setup_node_id(node_id);
 	setup_node_num(node_num);
+	setup_core_num(core_num);
 
 	fd = open(test_file, O_CREAT | O_RDWR, 0666);
 	ftruncate(fd, file_size);
@@ -39,7 +40,7 @@ __global_init_share(int node_num, int node_id, const char *test_file, long file_
 }
 
 void *
-bi_global_init_master(int node_num, int node_id, const char *test_file, long file_size, void *map_addr, char *test_string)
+bi_global_init_master(int node_id, int node_num, int core_num, const char *test_file, long file_size, void *map_addr, char *test_string)
 {
 	void *mem;
 
@@ -53,7 +54,7 @@ bi_global_init_master(int node_num, int node_id, const char *test_file, long fil
 }
 
 void *
-bi_global_init_slave(int node_num, int node_id, const char *test_file, long file_size, void *map_addr)
+bi_global_init_slave(int node_id, int node_num, int core_num, const char *test_file, long file_size, void *map_addr)
 {
 	void *mem;
 

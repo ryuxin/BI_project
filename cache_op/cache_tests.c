@@ -108,7 +108,7 @@ clflush(volatile void *p)
 
 inline void
 update(volatile void *p)
-{ asm volatile ("clflush (%0) ; sfence" :: "r"(p) : "memory"); }
+{ asm volatile ("clflush (%0) ; lfence" :: "r"(p) : "memory"); }
 
 inline void
 clflushopt(volatile void *p)

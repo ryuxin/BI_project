@@ -51,7 +51,7 @@ main(int argc, char *argv[])
 	struct Mem_layout *layout;
 
 	test_parse_args(argc, argv);
-	mem = bi_global_init_slave(num_node, id_node, 
+	mem = bi_global_init_slave(id_node, num_node, num_core,
 				   TEST_FILE_NAME, TEST_FILE_SIZE, TEST_FILE_ADDR);
 	layout = (struct Mem_layout *)mem;
 
