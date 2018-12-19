@@ -1,6 +1,16 @@
 #include <stdio.h>
-#include <assert.h>
 #include <stdlib.h>
+#include <stdint.h>
+#include <assert.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <string.h>
+#include <stdarg.h>
+#include <errno.h>
+#include <math.h>
+#include <sys/resource.h>
+#include <sys/types.h>
+#include <sys/mman.h>
 #include "args.h"
 
 #define TEST_FILE_NAME "/lfs/cache_test"

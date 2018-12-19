@@ -156,4 +156,5 @@ init_global_memory(void *global_memory, char *s)
 
 	printf("magic string %s\n", global_layout->magic);
 	printf("start %p end %p tot sz %lu\n", global_memory, addr, (unsigned long)(addr - global_memory));
+	return addr;
 }

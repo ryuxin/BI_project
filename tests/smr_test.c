@@ -1,7 +1,17 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
+#include <assert.h>
+#include <fcntl.h>
 #include <unistd.h>
 #include <string.h>
+#include <stdarg.h>
+#include <errno.h>
+#include <math.h>
+#include <time.h>
+#include <sys/resource.h>
+#include <sys/types.h>
+#include <sys/mman.h>
 #include "args.h"
 
 #define TST_SZ 100
@@ -101,7 +111,7 @@ reclaim_all(int num)
 int
 bench(void)
 {
-	int i, id;
+	int i;
 	unsigned long n_read = 0, n_update = 0;
 	uint64_t s, e, s1, e1, tot_cost_r = 0, tot_cost_w = 0, max = 0, cost;
 	unsigned long r_99 = 0, w_99 = 0;
@@ -110,17 +120,17 @@ bench(void)
 	for (i = 0 ; i < N_OPS; i++) {
 		s1 = bi_local_rdtsc();
 
-		if (ops[(unsigned long)id]) {
+		if (ops[i]) {
 			bi_slab_free(bi_slab_alloc(bench_slab));
 
 			e1 = bi_local_rdtsc();
 			cost = e1-s1;
 			tot_cost_w += cost;
 			n_update++;
-			99_log[N_LOG - n_update] = cost;
+			p99_log[N_LOG - n_update] = cost;
 		} else {
-			ps_enter(&ps);
-			ps_exit(&ps);
+			bi_enter();
+			bi_exit();
 
 			e1 = bi_local_rdtsc();
 			cost = e1-s1;
@@ -145,9 +155,9 @@ bench(void)
 		w_99 = p99_log[N_LOG - 1 - n_update / 100];
 	}
 	printf("99p: read %lu write %lu\n", r_99, w_99);
-    printf("Thd %d: tot %lu ops (r %lu, u %lu) done, %llu (r %llu, w %llu) cycles per op, max %llu\n",
-           id, n_read+n_update, n_read, n_update, (unsigned long long)(e-s)/(n_read + n_update),
-           tot_cost_r, tot_cost_w, max);
+	printf("tot %lu ops (r %lu, u %lu) done, %lu (r %lu, w %lu) cycles per op, max %lu\n",
+		n_read+n_update, n_read, n_update, (e-s)/(n_read + n_update),
+		tot_cost_r, tot_cost_w, max);
 	return (int)n_update;
 }
 
@@ -162,7 +172,7 @@ test_mem(void)
 	for (j = 0 ; j < ITER ; j++) bi_smr_free(ptrs[j]);
 	end = bi_local_rdtsc();
 	end = (end-start)/ITER;
-	printf("Average cost of alloc->free: %lld\n", end);
+	printf("Average cost of alloc->free: %lu\n", end);
 	reclaim_all(ITER);
 
 	start = bi_local_rdtsc();
@@ -172,7 +182,7 @@ test_mem(void)
 	}
 	end = bi_local_rdtsc();
 	end = (end-start)/(OUT_ITER*ITER);
-	printf("Average cost of %d * (alloc->free): %lld\n", OUT_ITER, end);
+	printf("Average cost of %d * (alloc->free): %lu\n", OUT_ITER, end);
 	reclaim_all(OUT_ITER*ITER);
 
 	printf("Starting complicated allocation pattern for increasing numbers of allocations.\n");
@@ -241,8 +251,8 @@ test_quies(void)
 void
 test_smr(void)
 {
-	int nums[] = {1, 1000};
-	int i, r, j, k;
+	unsigned int nums[] = {1, 1000};
+	unsigned int i, r, j, k;
 	uint64_t start, end, tot;
 
 	for (i = 0 ; i < sizeof(nums)/sizeof(int) ; i++) {
@@ -265,8 +275,8 @@ test_smr(void)
 void
 test_flush(void)
 {
-	int nums[] = {1, 1000};
-	int i, r, j, k;
+	unsigned int nums[] = {1, 1000};
+	unsigned int i, r, j, k;
 	uint64_t start, end, tot;
 
 	for (i = 0 ; i < sizeof(nums)/sizeof(int) ; i++) {
@@ -286,10 +296,9 @@ test_flush(void)
 }
 
 int
-main(void)
+main(int argc, char *argv[])
 {
-	int i, j;
-	void *addr, *mem;
+	void *mem;
 	struct Mem_layout *layout;
 
 	setup_core_id(0);

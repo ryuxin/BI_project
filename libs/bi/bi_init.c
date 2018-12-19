@@ -44,7 +44,7 @@ bi_global_init_master(int node_id, int node_num, int core_num, const char *test_
 {
 	void *mem, *end;
 
-	mem = __global_init_share(node_num, node_id, test_file, file_size, map_addr);
+	mem = __global_init_share(node_id, node_num, core_num, test_file, file_size, map_addr);
 	// memset(mem, 0, file_size);
 	end = init_global_memory(mem, test_string);
 	assert(end - mem < file_size);
@@ -59,7 +59,7 @@ bi_global_init_slave(int node_id, int node_num, int core_num, const char *test_f
 {
 	void *mem;
 
-	mem = __global_init_share(node_num, node_id, test_file, file_size, map_addr);
+	mem = __global_init_share(node_id, node_num, core_num, test_file, file_size, map_addr);
 	clflush_range(mem, file_size);
 
 	return mem;

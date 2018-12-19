@@ -1,6 +1,16 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <assert.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <string.h>
+#include <stdarg.h>
+#include <errno.h>
+#include <math.h>
+#include <sys/resource.h>
+#include <sys/types.h>
+#include <sys/mman.h>
 #include "args.h"
 
 #define SMALLSZ 1
@@ -51,8 +61,8 @@ out_latency(unsigned long *re, int num, char *label)
 
 	for (i = 0; i < num; i++) sum += (uint64_t)re[i];
 	qsort(re, num, sizeof(unsigned long), cmpfunc);
-	printf("thd %d %s tot %d avg %llu 99.9 %lu 99 %lu min %lu max %lu\n", thd_local_id,
-	       label, num, sum/num, re[num/1000], re[num/100], re[num-1], re[0]);
+	printf("%s tot %d avg %lu 99.9 %lu 99 %lu min %lu max %lu\n", label,
+	       num, sum/num, re[num/1000], re[num/100], re[num-1], re[0]);
 }
 
 void
@@ -153,7 +163,7 @@ test_perf(void)
 	}
 	end = bi_local_rdtsc();
 	end = (end-start)/(ITER*LARGECHUNK);
-	printf("Average cost of large slab alloc+free: %lld\n", end);
+	printf("Average cost of large slab alloc+free: %lu\n", end);
 
 	start = bi_local_rdtsc();
 	for (j = 0 ; j < ITER ; j++) {
@@ -162,14 +172,13 @@ test_perf(void)
 	}
 	end = bi_local_rdtsc();
 	end = (end-start)/(ITER*SMALLCHUNK);
-	printf("Average cost of small slab alloc+free: %lld\n", end);
+	printf("Average cost of small slab alloc+free: %lu\n", end);
 }
 
 int
-main(void)
+main(int argc, char *argv[])
 {
-	int i, j;
-	void *addr, *mem;
+	void *mem;
 	struct Mem_layout *layout;
 
 	setup_core_id(0);

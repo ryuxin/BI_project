@@ -2,6 +2,10 @@
 #define ARGS_H
 #include "bi.h"
 
+#define TEST_FILE_NAME "/lfs/cache_test"
+#define TEST_FILE_SIZE (1024*1024*1024)
+#define TEST_FILE_ADDR (NULL)
+
 static int num_node, num_core, id_node;
 static int test_case;
 
