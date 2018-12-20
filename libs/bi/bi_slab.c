@@ -200,6 +200,8 @@ struct ps_slab_info *
 bi_slab_create(size_t obj_sz)
 {
 	struct ps_slab_info *si;
+	assert(__ps_slab_objmemsz(obj_sz) < MEM_MGR_OBJ_SZ);
+
 	si = malloc(sizeof(struct ps_slab_info));
 	bi_slab_init(si, obj_sz);
 	return si;
@@ -217,5 +219,6 @@ bi_slab_alloc(struct ps_slab_info *si)
 void
 bi_slab_free(void *buf)
 {
+	assert(buf);
 	__ps_slab_mem_free(buf, MEM_MGR_OBJ_SZ, sizeof(struct ps_slab));
 }

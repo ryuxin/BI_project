@@ -16,7 +16,7 @@
 #include <sys/mman.h>
 #include "bi.h"
 
-/************ TODO: init active node and core number ***********/
+/************ TODO: add node local init wrter update fucntion, mem alloc, core id ***********/
 static void *
 __global_init_share(int node_id, int node_num, int core_num, const char *test_file, long file_size, void *map_addr)
 {
@@ -42,11 +42,12 @@ __global_init_share(int node_id, int node_num, int core_num, const char *test_fi
 void *
 bi_global_init_master(int node_id, int node_num, int core_num, const char *test_file, long file_size, void *map_addr, char *test_string)
 {
-	void *mem;
+	void *mem, *end;
 
 	mem = __global_init_share(node_num, node_id, test_file, file_size, map_addr);
 	// memset(mem, 0, file_size);
-	init_global_memory(mem, test_string);
+	end = init_global_memory(mem, test_string);
+	assert(end - mem < file_size);
 	bi_global_rtdsc();
 	clwb_range(mem, file_size);
 

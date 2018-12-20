@@ -118,7 +118,7 @@ mem_mgr_free(struct Free_mem_item *buf)
 	ps_list_head_append_d(&free_mem_head, buf);
 }
 
-void
+void *
 init_global_memory(void *global_memory, char *s)
 {
 	void *addr;

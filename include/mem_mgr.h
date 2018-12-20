@@ -95,7 +95,7 @@ get_mem_start_addr(int nid)
 }
 
 /* This is called only once by master node */
-void init_global_memory(void *global_memory, char *s);
+void *init_global_memory(void *global_memory, char *s);
 /* This is called by every node to init phy mem allocator */
 void mem_mgr_init();
 struct Free_mem_item *mem_mgr_alloc(size_t sz);

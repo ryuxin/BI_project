@@ -150,9 +150,11 @@ bi_smr_reclaim(void)
 void
 bi_smr_free(void *buf)
 {
-	struct ps_mheader *m  = __ps_mhead_get(buf);
+	struct ps_mheader *m;
 	ps_tsc_t tsc;
 
+	assert(buf);
+	m   = __ps_mhead_get(buf);
 	tsc = bi_global_rtdsc();
 	__ps_mhead_setfree(m, tsc);
 	qsc_ring_enqueue(get_quies_ring(NODE_ID()), m);
