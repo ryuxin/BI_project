@@ -16,7 +16,7 @@
 #define SMALLSZ 1
 #define LARGESZ 8000
 #define ITER       (1024)
-#define SMALLCHUNK 2
+#define SMALLCHUNK 32
 #define LARGECHUNK 32
 
 struct small {
@@ -82,6 +82,7 @@ mt_consumer(struct ps_slab_info *sl, void **rb, char *name)
 		start = bi_local_rdtsc();
 		bi_slab_free(s);
 		end = bi_local_rdtsc();
+		assert(end > start);
 		cost[i] = end-start;
 	}
 	out_latency(cost, i, name);
@@ -99,6 +100,7 @@ mt_producer(struct ps_slab_info *sl, void **rb, char *name)
 		s = bi_slab_alloc(sl);
 		end = bi_local_rdtsc();
 		assert(s);
+		assert(end > start);
 
 		((int *)s)[0] = i;
 		rb[i] = s;
@@ -122,8 +124,7 @@ test_correctness(void)
 {
 	int i, j;
 
-	printf("Starting mark & check for increasing numbers of allocations.\n");
-	for (i = 0 ; i < ITER ; i++) {
+	for (i = 0 ; i < ITER ; i+=4) {
 		l[i] = bi_slab_alloc(l_slab);
 		assert(l[i]);
 		mark(l[i]->x, sizeof(struct larger), i);
@@ -137,11 +138,12 @@ test_correctness(void)
 			bi_slab_free(l[j]);
 		}
 	}
-	for (i = 0 ; i < ITER ; i++) {
+	for (i = 0 ; i < ITER ; i+=4) {
 		assert(l[i]);
 		chk(l[i]->x, sizeof(struct larger), i);
 		bi_slab_free(l[i]);
 	}
+	printf("correctness test passed!\n");
 }
 
 void
@@ -162,6 +164,7 @@ test_perf(void)
 		for (i = 0 ; i < LARGECHUNK ; i++) bi_slab_free(l[i]);
 	}
 	end = bi_local_rdtsc();
+	assert(end > start);
 	end = (end-start)/(ITER*LARGECHUNK);
 	printf("Average cost of large slab alloc+free: %lu\n", end);
 
@@ -171,6 +174,7 @@ test_perf(void)
 		for (i = 0 ; i < SMALLCHUNK ; i++) bi_slab_free(s[i]);
 	}
 	end = bi_local_rdtsc();
+	assert(end > start);
 	end = (end-start)/(ITER*SMALLCHUNK);
 	printf("Average cost of small slab alloc+free: %lu\n", end);
 }

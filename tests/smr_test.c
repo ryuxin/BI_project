@@ -2,30 +2,24 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <assert.h>
-#include <fcntl.h>
 #include <unistd.h>
 #include <string.h>
-#include <stdarg.h>
 #include <errno.h>
 #include <math.h>
-#include <time.h>
-#include <sys/resource.h>
-#include <sys/types.h>
 #include <sys/mman.h>
 #include "args.h"
 
 #define TST_SZ 100
 #define BENCH_SZ 1
-#define ITER 1024
+#define ITER 1000
 #define OUT_ITER 50
-#define N_OPS (1000000)
+#define N_OPS (1800)
 #define N_LOG (N_OPS)
 
 static void *ptrs[ITER];
 struct ps_slab_info *tst_slab, *bench_slab;
 static char ops[N_OPS];
 static unsigned long p99_log[N_LOG];
-char *TRACE_FILE = "/tmp/trace.dat";
 
 static int
 cmpfunc(const void * a, const void * b)
@@ -40,62 +34,6 @@ spin_delay(uint64_t cycles)
 	e = s + cycles;
 	curr = s;
 	while (curr < e) curr = bi_local_rdtsc();
-	return;
-}
-
-void
-trace_gen(int fd, unsigned int nops, unsigned int percent_update)
-{
-	unsigned int i;
-
-	srand(time(NULL));
-	for (i = 0 ; i < nops ; i++) {
-		char value;
-		if ((unsigned int)rand() % 100 < percent_update) value = 'U';
-		else                               value = 'R';
-		if (write(fd, &value, 1) < 1) {
-			perror("Writing to trace file");
-			exit(-1);
-		}
-	}
-	lseek(fd, 0, SEEK_SET);
-}
-
-void
-load_trace(void)
-{
-	int fd, ret;
-	int bytes;
-	unsigned long i, n_read, n_update;
-
-	ret = mlock(ops, N_OPS);
-	if (ret) {
-		printf("Cannot lock memory (%d). Check privilege (i.e. use sudo). Exit.\n", ret);
-		exit(-1);
-	}
-
-	printf("loading trace file @ %s.\n", TRACE_FILE);
-	/* read the entire trace into memory. */
-	fd = open(TRACE_FILE, O_RDONLY);
-	if (fd < 0) {
-		fd = open(TRACE_FILE, O_CREAT | O_RDWR, S_IRWXU);
-		assert(fd >= 0);
-		trace_gen(fd, N_OPS, 50);
-	}
-
-	bytes = read(fd, &ops[0], N_OPS);
-	assert(bytes == N_OPS);
-	n_read = n_update = 0;
-
-	for (i = 0 ; i < N_OPS ; i++) {
-		if      (ops[i] == 'R') { ops[i] = 0; n_read++; }
-		else if (ops[i] == 'U') { ops[i] = 1; n_update++; }
-		else assert(0);
-	}
-	printf("Trace: read %lu, update %lu, total %lu\n", n_read, n_update, (n_read+n_update));
-	assert(n_read+n_update == N_OPS);
-
-	close(fd);
 	return;
 }
 
@@ -121,7 +59,7 @@ bench(void)
 		s1 = bi_local_rdtsc();
 
 		if (ops[i]) {
-			bi_slab_free(bi_slab_alloc(bench_slab));
+			bi_smr_free(bi_slab_alloc(bench_slab));
 
 			e1 = bi_local_rdtsc();
 			cost = e1-s1;
@@ -174,7 +112,7 @@ test_mem(void)
 	end = (end-start)/ITER;
 	printf("Average cost of alloc->free: %lu\n", end);
 	reclaim_all(ITER);
-
+/*
 	start = bi_local_rdtsc();
 	for (j = 0 ; j < OUT_ITER ; j++) {
 		for (i = 0 ; i < ITER ; i++) ptrs[i] = bi_slab_alloc(tst_slab);
@@ -184,8 +122,8 @@ test_mem(void)
 	end = (end-start)/(OUT_ITER*ITER);
 	printf("Average cost of %d * (alloc->free): %lu\n", OUT_ITER, end);
 	reclaim_all(OUT_ITER*ITER);
-
 	printf("Starting complicated allocation pattern for increasing numbers of allocations.\n");
+*/
 	for (i = 0 ; i < OUT_ITER ; i++) {
 		ptrs[i] = bi_slab_alloc(tst_slab);
 		for (j = i+1 ; j < ITER ; j++) {
@@ -204,7 +142,6 @@ test_mem(void)
 	printf("BI snr alloc test: SUCCESS\n");
 }
 
-
 void
 test_bi(void)
 {
@@ -215,7 +152,7 @@ test_bi(void)
 		printf("cannot lock memory %d... exit.\n", ret);
 		exit(-1);
 	}
-	load_trace();
+	load_trace(N_OPS, 50, ops);
 	ret = bench();
 	reclaim_all(ret);
 	return;
@@ -259,7 +196,7 @@ test_smr(void)
 		tot = 0;
 		for(j=0; j<ITER; j++) {
 			for(k=0; k<nums[i]; k++) {
-				bi_slab_free(bi_slab_alloc(bench_slab));
+				bi_smr_free(bi_slab_alloc(bench_slab));
 			}
 			spin_delay(QUISE_FLUSH_PERIOD);
 			start = bi_local_rdtsc();
@@ -283,10 +220,11 @@ test_flush(void)
 		tot = 0;
 		for(j=0; j<ITER; j++) {
 			for(k=0; k<nums[i]; k++) {
-				bi_slab_free(bi_slab_alloc(bench_slab));
+				bi_smr_free(bi_slab_alloc(bench_slab));
 			}
 			start = bi_local_rdtsc();
 			r = bi_smr_flush();
+			end = bi_local_rdtsc();
 			tot += (end - start);
 			assert(r == nums[i]);
 			reclaim_all(nums[i]);

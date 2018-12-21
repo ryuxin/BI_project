@@ -6,6 +6,7 @@
 static inline struct quies_item *
 qsc_ring_peek(struct bi_qsc_ring *ql)
 {
+	if (ql->head == ql->tail) return NULL;
 	return &(ql->ring[ql->head]);
 }
 
@@ -107,7 +108,7 @@ bi_quiesce(void)
 	}
 	bi_mb();
 
-	for (i = 1 ; i < tot_cpu; i++) {
+	for (i = 0; i < tot_cpu; i++) {
 		/* Make sure we don't all hammer core 0... */
 		qsc_cpu = (curr + i) % tot_cpu;
 		for(j=0; j<tot_core; j++) {
