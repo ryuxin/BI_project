@@ -42,7 +42,7 @@ struct Mem_layout {
 	struct Per_node_info mem_free_lists;
 	struct Per_node_info mem_start_addr;
 	struct Global_rdtsc time;
-};
+} __attribute__((aligned(CACHE_LINE), packed));
 
 extern struct Mem_layout *global_layout;
 
@@ -92,6 +92,28 @@ static inline void *
 get_mem_start_addr(int nid)
 {
 	return global_layout->mem_start_addr.info[nid];
+}
+
+/************** debug functions ***********/
+static inline void
+dbg_chk_per_core(struct Per_core_info *p)
+{
+	int i, j;
+	assert(p);
+	for(i=0; i<NUM_NODES; i++) {
+		for(j=0; j<NUM_CORE_PER_NODE; j++) {
+			assert(p->info[i][j]);
+		}
+	}
+}
+static inline void
+dbg_chk_per_node(struct Per_node_info *p)
+{
+	int i;
+	assert(p);
+	for(i=0; i<NUM_NODES; i++) {
+		assert(p->info[i]);
+	}
 }
 
 /* This is called only once by master node */

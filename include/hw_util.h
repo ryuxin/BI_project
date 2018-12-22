@@ -21,6 +21,7 @@ extern __thread int local_core_id;
 #define bi_mb()      __asm__ __volatile__ ("mfence":::"memory")
 #define bi_ccb()     __asm__ __volatile__ ("" ::: "memory")
 
+void load_trace(long nops, unsigned int percent_update, char *ops);
 uint64_t bi_global_rtdsc();
 
 /* x86 cpuid instruction barrier. */

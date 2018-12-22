@@ -60,14 +60,15 @@ static inline int
 __ps_in_lib(struct parsec *ps)
 { return ps->time_out <= ps->time_in; }
 
-int
-bi_smr_flush(void)
+/*********************** TODO add wirter log to flush chang flush from 1 not 0 ***************/
+static int
+bi_smr_flush_quiesce_queue(void)
 {
 	int i, r, qsc_cpu, tot_cpu, curr;
 	struct bi_qsc_ring *ql;
 
-	curr          = NODE_ID();
-	tot_cpu       = get_active_node_num();
+	curr    = NODE_ID();
+	tot_cpu = get_active_node_num();
 	for (i = 1 ; i < tot_cpu; i++) {
 		/* Make sure we don't all hammer core 0... */
 		qsc_cpu = (curr + i) % tot_cpu;
@@ -77,13 +78,21 @@ bi_smr_flush(void)
 	}
 	bi_mb();
 
-	for (r=0, i = 1 ; i < tot_cpu; i++) {
+	for (r=0, i = 0; i < tot_cpu; i++) {
 		qsc_cpu = (curr + i) % tot_cpu;
 		ql = get_quies_ring(qsc_cpu);
 		r += (MAX_QUI_RING_LEN + ql->tail - ql->head) % MAX_QUI_RING_LEN;
 		qsc_ring_flush(ql);
 	}
 	bi_mb();
+	return r;
+}
+
+int
+bi_smr_flush(void)
+{
+	int r;
+	r = bi_smr_flush_quiesce_queue();
 	return r;
 }
 

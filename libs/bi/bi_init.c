@@ -17,26 +17,37 @@
 #include "bi.h"
 
 /************ TODO: add node local init wrter update fucntion, mem alloc, core id ***********/
-static void *
-__global_init_share(int node_id, int node_num, int core_num, const char *test_file, long file_size, void *map_addr)
+static inline void *
+map_memory(const char *test_file, long file_size, void *map_addr)
 {
-	int fd;
 	void *mem;
-
-	setup_node_id(node_id);
-	setup_node_num(node_num);
-	setup_core_num(core_num);
-
+#ifdef ENABLE_LOCAL_MEMORY
+	(void)test_file;
+	mem = mmap(map_addr, file_size, PROT_READ | PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, 0, 0);
+	printf("bi init: map local memory\n");
+#else
+	int fd;
 	fd = open(test_file, O_CREAT | O_RDWR, 0666);
 	ftruncate(fd, file_size);
 	mem = mmap(map_addr, file_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+	close(fd);
+	printf("bi init: map global memory\n");
+#endif
 	if (mem == MAP_FAILED) {
 		printf("mmap failed: file %s sz %ld\n", test_file, file_size);
 		exit(-1);
 	}
-	rpc_init_global();
-
 	return mem;
+}
+
+static inline void *
+__global_init_share(int node_id, int node_num, int core_num, const char *test_file, long file_size, void *map_addr)
+{
+	setup_node_id(node_id);
+	setup_node_num(node_num);
+	setup_core_num(core_num);
+	rpc_init_global();
+	return map_memory(test_file, file_size, map_addr);
 }
 
 void *

@@ -1,9 +1,9 @@
 #ifndef CC_CACHE_UTIL_H
 #define CC_CACHE_UTIL_H
-#ifndef ENABLE_NON_CC_OP
 
 #include "constant.h"
 
+#ifndef ENABLE_NON_CC_OP
 static inline void
 bi_flush_cache(void *p)
 {
