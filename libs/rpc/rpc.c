@@ -40,6 +40,7 @@ rpc_recv_ext(struct msg_queue *q, int *pos, void *data, int spin)
 		bi_wb_cache(&mn->meta);
 		*pos = cur + 1;
 	} while (!ret_sz && spin);
+	assert(ret_sz < MAX_MSG_SIZE);
 
 	return ret_sz;
 }
@@ -51,6 +52,7 @@ rpc_send(int node, void *data, size_t size)
 	int *pos;
 
 //	printc("rpc send sender %d to %d id %d sz %d\n", caller, recv_node, memid, size);
+	assert(size < MAX_MSG_SIZE);
 	mq  = (struct msg_queue *)get_send_ring(node);
 	pos = &(snt_pos.head[node][CORE_ID()]);
 
@@ -77,6 +79,7 @@ rpc_send_server(int nid, int cid, void *data, size_t size)
 	int *pos;
 
 //	printc("rpc send sender %d to %d id %d sz %d\n", caller, recv_node, memid, size);
+	assert(size < MAX_MSG_SIZE);
 	mq  = (struct msg_queue *)get_send_ring_server(nid, cid);
 	pos = &(rcv_pos.head[nid][cid]);
 

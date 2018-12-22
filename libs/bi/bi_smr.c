@@ -21,13 +21,14 @@ qsc_ring_dequeue(struct bi_qsc_ring *ql)
 	return ret;
 }
 
-static inline void
+static inline int
 qsc_ring_enqueue(struct bi_qsc_ring *ql, struct ps_mheader *m)
 {
 	void *addr;
 	if (ql->head == (ql->tail + 1) % MAX_QUI_RING_LEN) {
 		printf("quisence ring full %d\n", MAX_QUI_RING_LEN);
 		assert(0);
+		return -1;
 	}
 	ql->ring[ql->tail].mh = m;
 	ql->ring[ql->tail].sz = bi_slab_objmem(m->slab->si);
@@ -35,6 +36,7 @@ qsc_ring_enqueue(struct bi_qsc_ring *ql, struct ps_mheader *m)
 	ql->tail              = (ql->tail+1) % MAX_QUI_RING_LEN;
 	clwb_range_opt(addr, CACHE_LINE);
 	clwb_range(ql, CACHE_LINE);
+	return 0;
 }
 
 static inline void
@@ -126,11 +128,14 @@ bi_quiesce(void)
 int
 bi_smr_reclaim(void)
 {
-	struct bi_qsc_ring *ql = get_quies_ring(NODE_ID());
-	struct quies_item *a   = qsc_ring_peek(ql);
+	struct bi_qsc_ring *ql;
+	struct quies_item *a;
 	int i=0;
 	ps_tsc_t qsc;
 
+	ql   = get_quies_ring(NODE_ID());
+	assert(ql);
+	a    = qsc_ring_peek(ql);
 	if (!a) return i;
 	qsc  = bi_quiesce();
 	qsc -= QUISE_FLUSH_PERIOD;
