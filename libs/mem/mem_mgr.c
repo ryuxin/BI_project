@@ -125,7 +125,6 @@ init_global_memory(void *global_memory, char *s)
 	int i;
 	
 	addr = global_memory;
-	global_layout = (struct Mem_layout *)addr;
 	memset(global_layout, 0, sizeof(struct Mem_layout));
 	if (s) __init_magic_str(s);
 	

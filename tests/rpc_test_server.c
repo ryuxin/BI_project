@@ -21,17 +21,37 @@ rpc_test_server(struct Mem_layout *layout)
 {
 	int r;
 	size_t s;
-	int id=0;
+	int id=0, nd, cd;
 
 	printf("rpc test server %s\n", layout->magic);
 	while (1) {
-		s = rpc_recv(1, &test_rcv_msg, 1);
-		assert(s);
+		s = rpc_recv_server(&test_rcv_msg, &nd, &cd);
+		if (!s) continue;
+		assert(nd == 1);
+		assert(cd == 0);
 		printf("recv %s\n", test_rcv_msg.message);
 		if (test_rcv_msg.message[0] == 'e') break;
 
 		sprintf(test_snt_msg.message, "rpc test reply %d", id++);
-		r = rpc_send(1, &test_snt_msg, s);
+		r = rpc_send_server(nd, cd, &test_snt_msg, s);
+		assert(r == 0);
+	}
+}
+
+static void
+rpc_bench_server(size_t sz)
+{
+	int r;
+        size_t s;
+	int nd, cd;
+
+	sprintf(test_snt_msg.message, "rpc test bench reply");
+	while (1) {
+		s = rpc_recv_server(&test_rcv_msg, &nd, &cd);
+		if (!s) continue;
+		assert(s == sz);
+		if (test_rcv_msg.message[0] == 'e') break;
+		r = rpc_send_server(nd, cd, &test_snt_msg, sz);
 		assert(r == 0);
 	}
 }
@@ -52,7 +72,8 @@ main(int argc, char *argv[])
 		non_cc_test(layout);
 		rpc_test_server(layout);
 	} else {
-		return 0;
+		rpc_bench_server(1);
+		rpc_bench_server(128);
 	}
 	return 0;
 }

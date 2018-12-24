@@ -13,6 +13,7 @@
 #include <sys/mman.h>
 #include "args.h"
 
+#define TEST_FILE_ADDR (NULL)
 #define SMALLSZ 1
 #define LARGESZ 8000
 #define ITER       (1024)

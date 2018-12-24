@@ -16,6 +16,8 @@
 #include <sys/mman.h>
 #include "rpc_test_common.h"
 
+#define ITER (1024)
+
 static void
 rpc_test_client(struct Mem_layout *layout)
 {
@@ -44,6 +46,28 @@ rpc_test_client(struct Mem_layout *layout)
 	}
 }
 
+static void
+rpc_bench_client(size_t sz)
+{
+	int i, r;
+	uint64_t start, end;
+	size_t s;
+
+	sprintf(test_snt_msg.message, "rpc test bench request");
+	start = bi_local_rdtsc();
+	for(i=0; i<ITER; i++) {
+		r = rpc_send(0, &test_snt_msg, sz);
+		assert(r == 0);
+		s = rpc_recv(0, &test_rcv_msg, 1);
+		assert(s == sz);
+	}
+	end = bi_local_rdtsc();
+	sprintf(test_snt_msg.message, "exit");
+	assert(end > start);
+	rpc_send(0, &test_snt_msg, sz);
+	printf("rpc round trip sz %lu avg cost %lu\n", sz,  (end - start)/ITER);
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -59,7 +83,8 @@ main(int argc, char *argv[])
 		non_cc_test(layout);
 		rpc_test_client(layout);
 	} else {
-		return 0;
+		rpc_bench_client(1);
+		rpc_bench_client(128);
 	}
 	return 0;
 }

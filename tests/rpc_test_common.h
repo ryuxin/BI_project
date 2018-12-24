@@ -3,6 +3,7 @@
 #include "bi.h"
 #include "args.h"
 
+#define TEST_FILE_ADDR ((void *)0x7fffb7a1d000)
 #define TEST_MSG_SIZE (128)
 
 struct Rpc_test_msg {

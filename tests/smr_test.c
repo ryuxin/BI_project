@@ -9,6 +9,7 @@
 #include <sys/mman.h>
 #include "args.h"
 
+#define TEST_FILE_ADDR (NULL)
 #define TST_SZ 100
 #define BENCH_SZ 1
 #define ITER 1000

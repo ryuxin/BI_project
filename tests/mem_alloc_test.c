@@ -13,8 +13,6 @@
 #include <sys/mman.h>
 #include "args.h"
 
-#define TEST_FILE_NAME "/lfs/cache_test"
-#define TEST_FILE_SIZE (1024*1024*1024)
 #define TEST_FILE_ADDR (NULL)
 #define ITER 1024
 
