@@ -16,6 +16,9 @@
 #include <sys/mman.h>
 #include "bi.h"
 
+volatile int running_cores;
+char recv_buf[MAX_MSG_SIZE];
+
 /************ TODO: add node local init wrter update fucntion, mem alloc, core id ***********/
 static inline void *
 map_memory(const char *test_file, long file_size, void *map_addr)
@@ -62,6 +65,7 @@ bi_global_init_master(int node_id, int node_num, int core_num, const char *test_
 	assert(end - mem < file_size);
 	bi_global_rtdsc();
 	clwb_range(mem, file_size);
+	mem_mgr_init();
 
 	return mem;
 }
@@ -74,6 +78,7 @@ bi_global_init_slave(int node_id, int node_num, int core_num, const char *test_f
 	mem = __global_init_share(node_id, node_num, core_num, test_file, file_size, map_addr);
 	clflush_range(mem, file_size);
 	global_layout = (struct Mem_layout *)mem;
+	mem_mgr_init();
 	return mem;
 }
 
@@ -81,4 +86,33 @@ void
 bi_local_init_reader(int core_id)
 {
 	setup_core_id(core_id);
+}
+
+void
+bi_local_init_server(int core_id, int ncore)
+{
+	setup_core_id(core_id);
+	running_cores = ncore - 1;
+}
+
+void
+bi_server_run(bi_update_fn_t update_fn)
+{
+	uint64_t flush_prev, tsc_prev, curr;
+	size_t s;
+	int nd, cd;
+
+	flush_prev = bi_local_rdtsc();
+	tsc_prev   = bi_local_rdtsc();
+	while (running_cores) {
+		curr = bi_local_rdtsc();
+		if (curr - flush_prev > QUISE_FLUSH_PERIOD) {
+			bi_smr_flush();
+			bi_smr_reclaim();
+		}
+		if (curr - flush_prev > GLOBAL_TSC_PERIOD) bi_global_rtdsc();
+		s = rpc_recv_server(recv_buf, &nd, &cd);
+		if (!s) continue;
+		update_fn(recv_buf, s, nd, cd);
+	}
 }

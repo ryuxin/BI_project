@@ -11,9 +11,9 @@ static inline void
 __advance_recv_id(void)
 {
 	svr_core++;
-	if (svr_core % NUM_CORE_PER_NODE == 0) {
+	if (svr_core % get_active_core_num() == 0) {
 		svr_core = 0;
-		svr_node = (svr_node+1) % NUM_NODES;
+		svr_node = (svr_node+1) % get_active_node_num();
 	}
 }
 

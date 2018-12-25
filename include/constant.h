@@ -6,9 +6,10 @@
 /************** hardware setup ********/
 #define CACHE_LINE 64
 #define PAGE_SIZE 4096
-#define NUM_NODES 2
+#define NUM_NODES 4
 #define NUM_CORE_PER_NODE 8
 #define NUM_ALL_CORES (NUM_NODES * NUM_CORE_PER_NODE)
+#define CPU_HZ (2500000 * 1000)
 
 //#define ENABLE_LOCAL_MEMORY
 #define ENABLE_NON_CC_OP
@@ -24,7 +25,11 @@
 
 /******** PARSEC ************/
 #define MAX_QUI_RING_LEN 1024
+#define GLOBAL_TSC_PERIOD (5000)
 #define QUISE_FLUSH_PERIOD (1000000)
+
+/******** TESTS ************/
+#define MAX_TEST_OBJ_NUM (1024)
 
 #ifndef likely
 #define likely(x)      __builtin_expect(!!(x), 1)

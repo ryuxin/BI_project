@@ -35,7 +35,6 @@ main(int argc, char *argv[])
 
 	assert(id_node == NODE_ID());
 	addr = get_mem_start_addr(id_node);
-	mem_mgr_init();
 
 	for (i = ITER-1 ; i >= 0 ; i--) {
 		for (j = 0; j<MEM_MGR_OBJ_NUM; j++) {

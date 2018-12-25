@@ -1,11 +1,22 @@
 #ifndef MEM_MGR_H
 #define MEM_MGR_H
 
+#include <ck_spinlock.h>
 #include "constant.h"
 #include "hw_util.h"
 #include "ps_list.h"
 
 #define MAGIC_SZ 64
+
+struct mcslock_context {
+	ck_spinlock_mcs_context_t l;
+	char padding[CACHE_LINE*2 - sizeof(ck_spinlock_mcs_context_t)];
+} __attribute__((aligned(CACHE_LINE)));
+
+struct Test_obj {
+	void *data;
+	size_t sz;
+} __attribute__((aligned(CACHE_LINE)));
 
 struct Free_mem_item {
 	void *addr;
@@ -34,6 +45,7 @@ struct Mem_layout {
 	void *parsec_area;
 	void *quies_area;
 	void *mem_list_area;
+	struct Test_obj *test_obj_area;
 	void *data_area;
 	struct Per_core_info send_rings[NUM_NODES];
 	struct Per_core_info recv_rings[NUM_NODES];
@@ -42,6 +54,8 @@ struct Mem_layout {
 	struct Per_node_info mem_free_lists;
 	struct Per_node_info mem_start_addr;
 	struct Global_rdtsc time;
+	struct mcslock_context mcs_cntxt[NUM_NODES][NUM_CORE_PER_NODE];
+	ck_spinlock_mcs_t mcs_lock[MAX_TEST_OBJ_NUM];
 } __attribute__((aligned(CACHE_LINE), packed));
 
 extern struct Mem_layout *global_layout;
@@ -92,6 +106,24 @@ static inline void *
 get_mem_start_addr(int nid)
 {
 	return global_layout->mem_start_addr.info[nid];
+}
+
+static inline ck_spinlock_mcs_t
+get_mcs_lock_cntxt(void)
+{
+	return &(global_layout->mcs_cntxt[NODE_ID()][CORE_ID()].l);
+}
+
+static inline struct ck_spinlock_mcs **
+get_mcs_lock(int id)
+{
+	return &(global_layout->mcs_lock[id]);
+}
+
+static inline struct Test_obj *
+get_test_obj(int id)
+{
+	return &(global_layout->test_obj_area[id]);
 }
 
 /************** debug functions ***********/

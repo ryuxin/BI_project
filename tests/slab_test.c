@@ -193,7 +193,6 @@ main(int argc, char *argv[])
 				    "slab allocator tests");
 	layout = (struct Mem_layout *)mem;
 	printf("test: %s\n", layout->magic);
-	mem_mgr_init();
 
 	assert(id_node == NODE_ID());
 	s_slab = bi_slab_create(sizeof(struct small));

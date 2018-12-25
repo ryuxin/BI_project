@@ -78,6 +78,15 @@ __init_mem_start_addr(struct Per_node_info *mem_addr, void *addr)
 	return addr;
 }
 
+static inline void
+__init_mcs_locks(void)
+{
+	int i;
+	for(i=0; i<MAX_TEST_OBJ_NUM; i++) {
+		ck_spinlock_mcs_init(&(global_layout->mcs_lock[i]));
+	}
+}
+
 void
 mem_mgr_init(void)
 {
@@ -144,6 +153,11 @@ init_global_memory(void *global_memory, char *s)
 	addr = (void *)round_up_to_page(addr);
 	global_layout->quies_area = addr;
 	addr = __init_quies_rings(&global_layout->quies_rings, addr);
+
+	__init_mcs_locks();
+	addr = (void *)round_up_to_page(addr);
+	global_layout->test_obj_area = addr;
+	addr = addr + (MAX_TEST_OBJ_NUM * sizeof(struct Test_obj));
 
 	addr = (void *)round_up_to_page(addr);
 	global_layout->mem_list_area = addr;

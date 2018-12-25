@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <assert.h>
+#include <pthread.h>
 #include "constant.h"
 
 extern int local_node_id;
@@ -23,6 +24,7 @@ extern __thread int local_core_id;
 
 void load_trace(long nops, unsigned int percent_update, char *ops);
 uint64_t bi_global_rtdsc();
+void thd_set_affinity(pthread_t tid, int nid, int cid);
 
 /* x86 cpuid instruction barrier. */
 static inline void
@@ -55,6 +57,7 @@ setup_node_id(int nid)
 static inline void
 setup_node_num(int num)
 {
+	assert(num <= NUM_NODES);
 	num_node_in_use = num;
 }
 
@@ -67,9 +70,10 @@ setup_core_id(int cid)
 static inline void
 setup_core_num(int num)
 {
+	assert(NUM_CORE_PER_NODE);
 	num_core_in_use = num;
 }
-
+/********* TODO remove assert in final version *********/
 static inline int
 get_active_node_num(void)
 {

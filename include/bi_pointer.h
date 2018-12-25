@@ -91,6 +91,7 @@ bi_dereference_pointer_aggressive(void *ptr)
 static inline void
 bi_publish_pointer(void **ptr, void *v)
 {
+	bi_wmb();
 	*ptr = v;
 	bi_wb_cache(ptr);
 	bi_wmb();

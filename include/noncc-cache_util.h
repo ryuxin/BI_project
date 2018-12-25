@@ -58,7 +58,7 @@ clwb_range(void *s, size_t sz)
  * 0 on failure due to contention (*target != old)
  * 1 otherwise (*target == old -> *target = updated)
  */
-/*
+
 static inline int
 bi_cas(unsigned long *target, unsigned long old, unsigned long updated)
 {
@@ -78,7 +78,6 @@ bi_faa(unsigned long *target, long inc)
                              : : "memory", "cc");
         return inc;
 }
-*/
 
 #endif
 #endif /* NON_CC_CACHE_UTIL_H */
