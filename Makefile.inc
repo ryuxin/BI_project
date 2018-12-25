@@ -6,5 +6,5 @@ MAKE      = make
 COPT      = -O3
 CWARN     = 
 CFLAGS    = -MD -MP -Wall -Wextra $(CWARN) $(COPT) $(CINC) -Wno-unused-function
-LDFLAGS   = -lbi -lrpc -lmem -lutil -lbi -lrpc -lmem -lutil -L$(CODE_DIR)/libs
+LDFLAGS   = -lbi -lrpc -lmem -lutil -lbi -lrpc -lmem -lutil -lck -lpthread -L$(CODE_DIR)/libs
 MAKEFLAGS = --no-print-directory --section-alignment 0x1000 -I$(PWD)
