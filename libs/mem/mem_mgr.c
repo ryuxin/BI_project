@@ -88,6 +88,23 @@ __init_mcs_locks(void)
 }
 
 void
+bi_set_barrier(int k)
+{
+	global_layout->g_bar.barrier = k;
+	clwb_range(&global_layout->g_bar, CACHE_LINE);
+}
+
+void
+bi_wait_barrier(int k)
+{
+	int r = 0;
+	do {
+		clflush_range(&global_layout->g_bar, CACHE_LINE);
+		r =  global_layout->g_bar.barrier;
+	} while(r != k);
+}
+
+void
 mem_mgr_init(void)
 {
 	int i;
@@ -166,6 +183,8 @@ init_global_memory(void *global_memory, char *s)
 	addr = (void *)round_up_to_page(addr);
 	global_layout->data_area = addr;
 	addr = __init_mem_start_addr(&global_layout->mem_start_addr, addr);
+
+	global_layout->g_bar.barrier = 0;
 
 	printf("magic string %s\n", global_layout->magic);
 	printf("start %p end %p tot sz %lu\n", global_memory, addr, (unsigned long)(addr - global_memory));

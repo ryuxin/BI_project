@@ -36,7 +36,11 @@ struct Per_node_info {
 } __attribute__((aligned(CACHE_LINE), packed));
 
 struct Global_rdtsc {
-	uint64_t tsc;
+	volatile uint64_t tsc;
+} __attribute__((aligned(CACHE_LINE)));
+
+struct Global_barrier {
+	volatile int barrier;
 } __attribute__((aligned(CACHE_LINE)));
 
 struct Mem_layout {
@@ -54,6 +58,7 @@ struct Mem_layout {
 	struct Per_node_info mem_free_lists;
 	struct Per_node_info mem_start_addr;
 	struct Global_rdtsc time;
+	struct Global_barrier g_bar;
 	struct mcslock_context mcs_cntxt[NUM_NODES][NUM_CORE_PER_NODE];
 	ck_spinlock_mcs_t mcs_lock[MAX_TEST_OBJ_NUM];
 } __attribute__((aligned(CACHE_LINE), packed));
@@ -148,6 +153,8 @@ dbg_chk_per_node(struct Per_node_info *p)
 	}
 }
 
+void bi_set_barrier(int k);
+void bi_wait_barrier(int k);
 /* This is called only once by master node */
 void *init_global_memory(void *global_memory, char *s);
 /* This is called by every node to init phy mem allocator */

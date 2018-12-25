@@ -2,21 +2,25 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <assert.h>
+#include <stdarg.h>
+#include <errno.h>
+#include <unistd.h>
 #include <pthread.h>
-#include "bi.h"
+#include "atomic_obj.h"
 
 #define TEST_FILE_NAME "/lfs/cache_test"
 #define TEST_FILE_SIZE (1024*1024*1024)
-#define TEST_FILE_ADDR (NULL)
+#define TEST_FILE_ADDR ((void *)0x7fffb75f4000)
 #define N_OPS 10000000
 #define MULTIPLIER 5101
 
+struct ps_slab_info *slab_allocator;
 char *temp_obj;
 struct thread_data tds[NUM_CORE_PER_NODE];
-struct thread_data agg;
 static int num_node, num_core, id_node, obj_num;
 static size_t obj_sz;
 static char ops[N_OPS];
+static int tot_thput = 0;
 
 static void
 usage(void)
@@ -84,23 +88,19 @@ test_parse_args(int argc, char **argv)
 void
 print_re(struct thread_data *mythd)
 {
-	uint64_t avg_r = 0, avg_w = 0, avg = 0, thput;
+	uint64_t avg_r = 0, avg_w = 0, avg = 0, thput=0;
 
 	if (mythd->nread) avg_r   = mythd->rtsc/mythd->nread;
 	if (mythd->nupdate) avg_w = mythd->wtsc/mythd->nupdate;
 	if (mythd->nread + mythd->nupdate) {
-		avg = mythd->tsc/(mythd->nread + mythd->nupdate);
+		avg = mythd->tot_tsc/(mythd->nread + mythd->nupdate);
 	}
 	if (avg) thput = CPU_HZ/avg;
+	tot_thput += thput;
 	printf("node %d core %d tot %d ops (r %d, u %d) done, %lu (r %lu, w %lu) cycles per op, thput %lu\n",
 			mythd->nd, mythd->cd,
 			mythd->nread + mythd->nupdate, mythd->nread, mythd->nupdate, 
 			avg, avg_r, avg_w, thput);
-	agg.nread   += mythd->nread;
-	agg.nupdate += mythd->nupdate;
-	agg.rtsc    += mythd->rtsc;
-	agg.wtsc    += mythd->wtsc;
-	agg.tot_tsc += mythd->tot_tsc;
 }
 
 void
@@ -138,7 +138,7 @@ bench(struct thread_data *mythd)
 	}
 	e = bi_local_rdtsc();
 
-	assert(n_read + n_update <= N_LOG);
+	assert(n_read + n_update <= N_OPS);
 	mythd->nread   = n_read;
 	mythd->nupdate = n_update;
 	mythd->rtsc    = cost_r;
@@ -155,11 +155,11 @@ reader_thd_fn(void *arg)
 	thd_set_affinity(pthread_self(), mythd->nd, mythd->cd);
 	bi_local_init_reader(mythd->cd);
 	bench(mythd);
-	bi_reader_exit();
+	return NULL;
 }
 
 void
-spawn_reader(pthread_t thd, int nd, int cd, int ncore)
+spawn_reader(pthread_t *thd, int nd, int cd)
 {
 	int ret;
 
@@ -180,31 +180,44 @@ main(int argc, char *argv[])
 
 	test_parse_args(argc, argv);
 	if (!id_node) {
-			mem = bi_global_init_master(id_node, num_node, num_core,
-										TEST_FILE_NAME, TEST_FILE_SIZE, TEST_FILE_ADDR, 
-										"atomic object benchmark");
+		mem = bi_global_init_master(id_node, num_node, num_core,
+					    TEST_FILE_NAME, TEST_FILE_SIZE, TEST_FILE_ADDR, 
+					    "atomic object benchmark");
+		bi_set_barrier(1);
 	} else {
-			mem = bi_global_init_slave(id_node, num_node, num_core,
-										TEST_FILE_NAME, TEST_FILE_SIZE, TEST_FILE_ADDR);
+		mem = bi_global_init_slave(id_node, num_node, num_core,
+					   TEST_FILE_NAME, TEST_FILE_SIZE, TEST_FILE_ADDR);
+		bi_wait_barrier(1);
+		mem_mgr_init();
 	}
-	layout = (struct Mem_layout *)mem;
+	layout         = (struct Mem_layout *)mem;
+	slab_allocator = bi_slab_create(obj_sz);
+	temp_obj       = malloc(obj_sz);
 	printf("magic: %s\n", layout->magic);
+        memset(temp_obj, '$', obj_sz);
 	srand(time(NULL));
 	load_trace(N_OPS, 50, ops);
-	atomic_obj_init(obj_num, obj_sz);
-	__init_thd_data(id_node, 0, ncore, obj_num);
-	spawn_writer(&pthds[0], id_node, 0, num_core);
+	if (!id_node) {
+		atomic_obj_init(obj_num, obj_sz);
+		usleep(100000);
+		bi_set_barrier(2);
+	} else {
+		bi_wait_barrier(2);
+	}
+	__init_thd_data(id_node, 0, num_core, obj_num);
+	spawn_writer(&pthds[0], id_node, 0);
 	for(i=1; i<num_core; i++) {
-		__init_thd_data(id_node, i, ncore, obj_num);
-		spawn_reader(&pthds[i], id_node, i, num_core);
+		__init_thd_data(id_node, i, num_core, obj_num);
+		spawn_reader(&pthds[i], id_node, i);
 	}
 	usleep(50000);
-	for (i = 0; i < num_core; i++) {
+	join_wirter(pthds[0]);
+	for (i = 1; i < num_core; i++) {
 		pthread_join(pthds[i], (void *)&ret);
 	}
-	memset(&agg, 0, sizeof(struct thread_data));
 	for (i = 0; i < num_core; i++) {
 		print_re(&tds[i]);
 	}
-	print_re(&agg);
+	printf("node %d ncore %d obj num %d sz %lu thput %d\n", num_node, num_core, obj_num, obj_sz, tot_thput);
+	sleep(10);
 }

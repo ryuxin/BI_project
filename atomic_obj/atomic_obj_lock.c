@@ -1,8 +1,8 @@
 #ifdef ATOMIC_OBJ_LOCK
 
+#include <stdio.h>
+#include <stdlib.h>
 #include "atomic_obj.h"
-
-struct ps_slab_info *slab_allocator;
 
 void
 atomic_obj_init(int num, size_t sz)
@@ -10,15 +10,12 @@ atomic_obj_init(int num, size_t sz)
 	int i;
 	struct Test_obj *to;
 
-	slab_allocator = bi_slab_create(sz);
 	assert(num <= MAX_TEST_OBJ_NUM);
 	for(i=0; i<num; i++) {
 		to       = get_test_obj(i);
 		to->sz   = sz;
 		to->data = bi_slab_alloc(slab_allocator);
 	}
-	temp_obj = malloc(sz);
-	memset(temp_obj, '$', sz);
 }
 
 void
@@ -54,9 +51,15 @@ atomic_obj_write(int id)
 }
 
 void
-spawn_writer(pthread_t thd, int nd, int cd, int ncore)
+spawn_writer(pthread_t *thd, int nd, int cd)
 {
-	spawn_reader(thd, nd, cd, ncore);
+	spawn_reader(thd, nd, cd);
 }
 
+void
+join_wirter(pthread_t thd)
+{
+	int ret;
+	pthread_join(thd, (void *)&ret);
+}
 #endif

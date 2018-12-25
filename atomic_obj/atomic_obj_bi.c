@@ -1,5 +1,7 @@
 #ifdef ATOMIC_OBJ_BI
 
+#include <stdio.h>
+#include <stdlib.h>
 #include "atomic_obj.h"
 
 struct atomic_obj_msg {
@@ -7,7 +9,6 @@ struct atomic_obj_msg {
 };
 
 struct atomic_obj_msg msg_reply = { .val = -1 };
-struct ps_slab_info *slab_allocator;
 
 static inline void
 atomic_obj_write_svr(int id)
@@ -16,8 +17,8 @@ atomic_obj_write_svr(int id)
 	struct Test_obj *to;
 
 	to       = get_test_obj(id);
-	old      = bi_dereference_pointer_lazy(&(to->data));
-	new_data = bi_slab_alloc();
+	old      = bi_dereference_pointer_lazy(to->data);
+	new_data = bi_slab_alloc(slab_allocator);
 	assert(to->data);
 	memcpy(new_data, temp_obj, to->sz);
 	bi_publish_pointer(&(to->data), new_data);
@@ -35,7 +36,7 @@ bi_msg_handler(void *msg, size_t sz, int nid, int cid)
 
 	req = (struct atomic_obj_msg *)msg;
 	atomic_obj_write_svr(req->val);
-	r   = rpc_send_server(nd, cd, &msg_reply, sz);
+	r   = rpc_send_server(nid, cid, &msg_reply, sz);
 	assert(r == 0);
 }
 
@@ -48,6 +49,7 @@ writer_thd_fn(void *arg)
 	thd_set_affinity(pthread_self(), mythd->nd, mythd->cd);
 	bi_local_init_server(mythd->cd, mythd->ncore);
 	bi_server_run(bi_msg_handler);
+	return NULL;
 }
 
 void
@@ -56,15 +58,12 @@ atomic_obj_init(int num, size_t sz)
 	int i;
 	struct Test_obj *to;
 
-	slab_allocator = bi_slab_create(sz);
 	assert(num <= MAX_TEST_OBJ_NUM);
 	for(i=0; i<num; i++) {
 		to       = get_test_obj(i);
 		to->sz   = sz;
 		to->data = bi_slab_alloc(slab_allocator);
 	}
-	temp_obj = malloc(sz);
-	memset(temp_obj, '$', sz);
 }
 
 void
@@ -98,7 +97,7 @@ atomic_obj_read(int id)
 }
 
 void
-spawn_writer(pthread_t thd, int nd, int cd, int ncore)
+spawn_writer(pthread_t *thd, int nd, int cd)
 {
 	int ret;
 
@@ -108,5 +107,9 @@ spawn_writer(pthread_t thd, int nd, int cd, int ncore)
 		exit(-1);
 	}
 }
+
+void
+join_wirter(pthread_t thd)
+{ (void)thd; return ; }
 
 #endif

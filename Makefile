@@ -2,7 +2,7 @@ include Makefile.inc
 
 .PHONY: lib test aobj clean all
 
-all: lib test
+all: lib test aobj
 
 lib:
 	make $(MAKEFLAGS) -C libs

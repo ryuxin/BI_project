@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -6,14 +7,13 @@
 #include <unistd.h>
 #include <sys/mman.h>
 #include <sys/types.h>
-#define _GNU_SOURCE
 #include <sched.h>
 #include <pthread.h>
 #include "mem_mgr.h"
 
 #define TRACE_NAME_LEN 50
 #define NUM_SOCKETS 4
-#define NUM_CORE_PER_SOCKET 27
+#define NUM_CORE_PER_SOCKET 28
 
 int local_node_id;
 int num_node_in_use;

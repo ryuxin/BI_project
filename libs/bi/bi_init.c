@@ -78,7 +78,6 @@ bi_global_init_slave(int node_id, int node_num, int core_num, const char *test_f
 	mem = __global_init_share(node_id, node_num, core_num, test_file, file_size, map_addr);
 	clflush_range(mem, file_size);
 	global_layout = (struct Mem_layout *)mem;
-	mem_mgr_init();
 	return mem;
 }
 
@@ -109,8 +108,12 @@ bi_server_run(bi_update_fn_t update_fn)
 		if (curr - flush_prev > QUISE_FLUSH_PERIOD) {
 			bi_smr_flush();
 			bi_smr_reclaim();
+			flush_prev = curr;
 		}
-		if (curr - flush_prev > GLOBAL_TSC_PERIOD) bi_global_rtdsc();
+		if (curr - tsc_prev > GLOBAL_TSC_PERIOD) {
+			bi_global_rtdsc();
+			tsc_prev = curr;
+		}
 		s = rpc_recv_server(recv_buf, &nd, &cd);
 		if (!s) continue;
 		update_fn(recv_buf, s, nd, cd);

@@ -63,7 +63,7 @@ static inline int
 bi_cas(unsigned long *target, unsigned long old, unsigned long updated)
 {
         char z;
-        __asm__ __volatile__("lock " PS_CAS_STR
+        __asm__ __volatile__("lock " "cmpxchg" "q" " %2, %0; setz %1"
                              : "+m" (*target), "=a" (z)
                              : "q"  (updated), "a"  (old)
                              : "memory", "cc");
@@ -73,7 +73,7 @@ bi_cas(unsigned long *target, unsigned long old, unsigned long updated)
 static inline long
 bi_faa(unsigned long *target, long inc)
 {
-        __asm__ __volatile__("lock " PS_FAA_STR
+        __asm__ __volatile__("lock " "xadd" "q" " %1, %0"
                              : "+m" (*target), "+q" (inc)
                              : : "memory", "cc");
         return inc;
