@@ -6,16 +6,15 @@
 #include <errno.h>
 #include <unistd.h>
 #include <pthread.h>
-#include "atomic_obj.h"
+#include "cbtree.h"
 
 #define TEST_FILE_NAME "/lfs/cache_test"
 #define TEST_FILE_SIZE (1024*1024*1024)
-#define TEST_FILE_ADDR ((void *)NULL)
+#define TEST_FILE_ADDR ((void *)0x7fffb75f4000)
 #define N_OPS 10000000
 #define MULTIPLIER 5101
 
 struct ps_slab_info *slab_allocator;
-char *temp_obj;
 struct thread_data tds[NUM_CORE_PER_NODE];
 static int num_node, num_core, id_node, obj_num, krange;
 static char ops[N_OPS];
@@ -106,7 +105,7 @@ void
 bench(struct thread_data *mythd)
 {
 	int n_read = 0, n_update = 0;
-	int i, jump, id, nobj, del = 0;
+	long i, jump, id, nobj, del = 0, del_id = 0;
 	struct cb_root *root;
 	struct cb_kv *ret;
 	void *dr;
@@ -125,21 +124,22 @@ bench(struct thread_data *mythd)
 		dr = NULL;
 		s1 = bi_local_rdtsc();
 		if (ops[i]) {
-			if (del == 0) cb_insert(tree, (k_t)id, (void *)id);
-			else dr = cb_erase(tree, (k_t)id);
+			if (del == 0) cb_insert(root, (k_t)id, (void *)id);
+			else dr = cb_erase(root, (k_t)del_id);
 			e1      = bi_local_rdtsc();
 			cost    = e1-s1;
 			cost_w += cost;
 			del     = 1- del;
 			n_update++;
-			if (dr) assert(dr == (void *)id);
+			if (dr) assert(dr == (void *)del_id);
+			del_id  = id;
 		} else {
-			ret     = cb_find(tree, (k_t)id);
+			ret     = cb_find(root, (k_t)id);
 			e1      = bi_local_rdtsc();
 			cost    = e1-s1;
 			cost_r += cost;
 			n_read++;
-			assert(V(ret) == (void *)id);
+			if (ret) assert(V(ret) == (void *)id);
 		}
 		id = (id+MULTIPLIER) % nobj;
 		assert(e1 > s1);

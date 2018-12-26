@@ -90,7 +90,7 @@ atomic_obj_read(int id)
 
 	bi_enter();
 	to  = get_test_obj(id);
-	old = bi_dereference_pointer_lazy(&(to->data));
+	old = bi_dereference_pointer_lazy(to->data);
 	assert(old);
 	bi_dereference_area_lazy(temp_obj, old, to->sz);
 	bi_exit();

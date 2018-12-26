@@ -7,18 +7,6 @@
 #include <limits.h>
 #include "cbtree.h"
 
-static inline node_t*
-nodeOf(kv_t *kv)
-{
-	return (node_t*)((char*)kv - offsetof(node_t, kv));
-}
-
-static inline int
-nodeSize(node_t *node)
-{
-	return node ? GET(node->size) : 0;
-}
-
 static inline node_t *
 mkNode(node_t *left, node_t *right, kv_t *kv)
 {
@@ -27,7 +15,7 @@ mkNode(node_t *left, node_t *right, kv_t *kv)
 	SET(node->right, right);
 	SET(node->size, 1 + nodeSize(left) + nodeSize(right));
 	node->kv = *kv;
-	clwb_range_opt(node, sizeof(node_t))
+	clwb_range_opt(node, sizeof(node_t));
 	return node;
 }
 
@@ -122,14 +110,12 @@ mkBalanced(node_t *cur, node_t *left, node_t *right, int replace, bool inPlace)
 	kv_t *kv = &cur->kv;
 	node_t *res;
 
-	if (ln+rn < 2)
-		goto balanced;
-	if (rn > WEIGHT * ln)
+	if (ln+rn < 2) goto balanced;
+	if (rn > WEIGHT * ln) {
 		res = mkBalancedL(left, right, kv);
-	else if (ln > WEIGHT * rn)
+	} else if (ln > WEIGHT * rn) {
 		res = mkBalancedR(left, right, kv);
-	else
-		goto balanced;
+	} else goto balanced;
 
 	TreeBBFreeNode(cur);
 	return res;
@@ -143,12 +129,12 @@ balanced:
 		if (replace == 0) {
 			assert(GET(cur->right) == right);
 			// XXX rcu_assign_pointer
-			smp_wmb();
+			bi_wmb();
 			SET(cur->left, left);
 		} else {
 			assert(GET(cur->left) == left);
 			// XXX rcu_assign_pointer
-			smp_wmb();
+			bi_wmb();
 			SET(cur->right, right);
 		}
 		SET(cur->size, 1 + nodeSize(left) + nodeSize(right));

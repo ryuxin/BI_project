@@ -56,23 +56,24 @@ test_correct(struct thread_data *mythd)
 	(void)mythd;
 
 	tree = get_rb_root(1);
+	tree->root = NULL;
 	for (i = 0; i < LEN; ++i) {
 		k_t key = (uintptr_t)i*2;
-		printf("+++ %d\n", key);
+//		printf("+++ %lu\n", key);
 		cb_insert(tree, key, (void*)key);
 		keys[i] = key;
 	}
-	assert(nodeSize(tree.root) == LEN);
-	printf("Insert test passed!");
+	assert(nodeSize(tree->root) == LEN);
+	printf("Insert test passed!\n");
 
-    for (i = 0; i < DEL; ++i) {
-		printf("--- %d\n", keys[i]);
+	for (i = 0; i < DEL; ++i) {
+//		printf("--- %lu\n", keys[i]);
 		assert(TreeBB_Delete(tree, keys[i]) == (void*)keys[i]);
 		assert(TreeBB_Delete(tree, keys[i]) == NULL);
-    }
-	assert(nodeSize(tree.root) == LEN-DEL);
+	}
+	assert(nodeSize(tree->root) == LEN-DEL);
 	TreeBB_Check(tree, keys+DEL);
-	printf("Delete test passed!");
+	printf("Delete test passed!\n");
 
 	for (i = DEL; i < LEN; ++i) {
 		void *this = (void*)keys[i];
@@ -81,7 +82,7 @@ test_correct(struct thread_data *mythd)
 		assert(V(cb_find(tree, keys[i])) == this);
 		assert(V(cb_find(tree, keys[i] + 1)) == NULL);
 	}
-	printf("Find test passed!");
+	printf("Find test passed!\n");
 }
 
 #endif  /* RBTREE_TEST */

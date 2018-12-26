@@ -26,14 +26,15 @@ TreeBBNewNode(void)
 void
 TreeBBFreeNode(node_t *n)
 {
+	assert(totalFreed < MAX_FREE_BUF_SZ);
 	free_buf[totalFreed++] = n;
 }
 
 static void
 free_nodes(void)
 {
-	for(totalFreed--; totalFreed>=0; totalFreed--) {
-		bi_smr_free(free_buf[totalFreed]);
+	for(; totalFreed>0; totalFreed--) {
+		bi_smr_free(free_buf[totalFreed - 1]);
 	}
 }
 
@@ -58,7 +59,7 @@ rbtree_msg_handler(void *msg, size_t sz, int nid, int cid)
 	assert(msg);
 	assert(sz == sizeof(struct rbtree_msg));
 
-	req = (struct atomic_obj_msg *)msg;
+	req = (struct rbtree_msg *)msg;
 	assert(req->type >= 0);
 	if (req->type == 0) cb_insert_svr(req->tree, req->key, req->value);
 	else msg_reply.value = cb_erase_svr(req->tree, req->key);
@@ -130,12 +131,14 @@ cb_find(struct cb_root *tree, uintptr_t needle)
 void
 cb_tree_init(struct cb_root *tree, int tree_sz, int range)
 {
-	int i, j, r;
+	long i, j, r;
+	tree->root = NULL;
 	r = range / tree_sz;
 	for(j=0, i=0; i<tree_sz; i++) {
 		cb_insert_svr(tree, (k_t)j, (void *)j);
 		j = (j + r) % range;
 	}
+	assert(nodeSize(tree->root) == tree_sz);
 }
 
 void

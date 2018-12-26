@@ -58,6 +58,18 @@ __init_thd_data(int nd, int cd, int ncore, int range, struct cb_root *root)
 	tds[cd].root  = root;
 }
 
+static inline node_t*
+nodeOf(kv_t *kv)
+{
+	        return (node_t*)((char*)kv - offsetof(node_t, kv));
+}
+
+static inline int
+nodeSize(node_t *node)
+{
+	        return node ? GET(node->size) : 0;
+}
+
 static inline struct cb_root *
 get_rb_root(int id)
 {
@@ -78,5 +90,8 @@ void cb_tree_init(struct cb_root *tree, int tree_sz, int range);
 void spawn_writer(pthread_t *thd, int nd, int cd);
 void spawn_reader(pthread_t *thd, int nd, int cd);
 void join_wirter(pthread_t thd);
+#ifdef RBTREE_TEST
+void test_correct(struct thread_data *mythd);
+#endif
 
 #endif	/* _LINUX_CBTREE_H */

@@ -56,7 +56,7 @@ bi_publish_area(void *dst, void *src, size_t sz)
 #define bi_dereference_pointer_lazy(ptr)                   \
 				__extension__				               \
 				({					                       \
-				__typeof__(p) __p = BI_ACCESS_ONCE((ptr)); \
+				__typeof__(ptr) __p = BI_ACCESS_ONCE((ptr)); \
 				(__p);				                       \
 				})
 /*
