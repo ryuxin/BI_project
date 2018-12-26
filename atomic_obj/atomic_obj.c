@@ -194,7 +194,7 @@ main(int argc, char *argv[])
 	slab_allocator = bi_slab_create(obj_sz);
 	temp_obj       = malloc(obj_sz);
 	printf("magic: %s\n", layout->magic);
-        memset(temp_obj, '$', obj_sz);
+	memset(temp_obj, '$', obj_sz);
 	srand(time(NULL));
 	load_trace(N_OPS, 50, ops);
 	if (!id_node) {

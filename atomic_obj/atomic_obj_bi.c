@@ -20,8 +20,8 @@ atomic_obj_write_svr(int id)
 	old      = bi_dereference_pointer_lazy(to->data);
 	new_data = bi_slab_alloc(slab_allocator);
 	assert(to->data);
-	memcpy(new_data, temp_obj, to->sz);
-	bi_publish_pointer(&(to->data), new_data);
+	bi_publish_area(new_data, temp_obj, to->sz);
+	bi_publish_pointer(to->data, new_data);
 	bi_smr_free(old);
 }
 
@@ -40,7 +40,7 @@ bi_msg_handler(void *msg, size_t sz, int nid, int cid)
 	assert(r == 0);
 }
 
-void *
+static void *
 writer_thd_fn(void *arg)
 {
 	struct thread_data *mythd;
@@ -92,7 +92,7 @@ atomic_obj_read(int id)
 	to  = get_test_obj(id);
 	old = bi_dereference_pointer_lazy(&(to->data));
 	assert(old);
-	memcpy(temp_obj, old, to->sz);
+	bi_dereference_area_lazy(temp_obj, old, to->sz);
 	bi_exit();
 }
 

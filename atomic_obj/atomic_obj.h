@@ -1,6 +1,7 @@
 #ifndef ATOMIC_OBJ_H
 #define ATOMIC_OBJ_H
 
+#include <pthread.h>
 #include "bi.h"
 
 struct thread_data {

@@ -48,39 +48,31 @@ bi_publish_area(void *dst, void *src, size_t sz)
 /* bi publish pointer maintain quisence queue and write log*/
 
 /*
-#define __dereference(p)						\
-				__extension__				\
-				({					\
-				__typeof__(p) __p = BI_ACCESS_ONCE(p); \
-				(__p);				\
-				})
-*/
-
-/*
  * read side interface.
  * dereference ptr which is in global memory.
  * This DOES NOT invalidates ptr before dereference, so get possible stale value.
  * There is NO read log to record ptr and *ptr. 
  */
-static inline void *
-bi_dereference_pointer_lazy(void *ptr)
-{
-	__typeof__(ptr) __p = BI_ACCESS_ONCE(ptr);
-	return (void *)__p;
-}
-
+#define bi_dereference_pointer_lazy(ptr)                   \
+				__extension__				               \
+				({					                       \
+				__typeof__(p) __p = BI_ACCESS_ONCE((ptr)); \
+				(__p);				                       \
+				})
 /*
  * read side interface.
  * dereference ptr which is in global memory.
  * This invalidates ptr before dereference, so get up-to-date value.
  * There is NO read log to record ptr and *ptr.
  */
-static inline void *
-bi_dereference_pointer_aggressive(void *ptr)
-{
-	bi_flush_cache(ptr);
-	return bi_dereference_pointer_lazy(ptr);
-}
+#define bi_dereference_pointer_aggressive(ptr)             \
+				__extension__				               \
+				({					                       \
+				bi_flush_cache(&(ptr));                    \
+				bi_rmb();                                  \
+				__typeof__(p) __p = BI_ACCESS_ONCE((ptr)); \
+				(__p);				                       \
+				})
 
 /*
  * write side interface.
@@ -88,13 +80,13 @@ bi_dereference_pointer_aggressive(void *ptr)
  * This writes back ptr to memroy.
  * There is NO write log to record ptr and *ptr.
  */
-static inline void
-bi_publish_pointer(void **ptr, void *v)
-{
-	bi_wmb();
-	*ptr = v;
-	bi_wb_cache(ptr);
-	bi_wmb();
-}
+#define bi_publish_pointer(ptr, v)              \
+				do {                            \
+					__typeof__(ptr) __pv = (v); \
+					bi_wmb();                   \
+					*(&(ptr)) = __pv;           \
+					bi_wb_cache(&(ptr));        \
+					bi_wmb();                   \
+				} while (0)
 
 #endif /* BI_POINTER_H */
