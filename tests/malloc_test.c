@@ -19,7 +19,7 @@
 #define TEST_THD_NUM 8
 
 static void
-tests(size_t sz, void *ptrs)
+tests(size_t sz, void **ptrs)
 {
 	int i, j;
 	for (i = ITER-1 ; i >= 0 ; i--) {
@@ -37,15 +37,16 @@ tests(size_t sz, void *ptrs)
 static void *
 thread_test_fn(void *arg)
 {
-	void *ptrs;
+	void **ptrs;
 	long cd = (long)arg;
 
 	thd_set_affinity(pthread_self(), 0, (int)cd);
-	ptrs = malloc(ITER * sizeof(void *));
+	ptrs = (void **)malloc(ITER * sizeof(void *));
 	tests(10, ptrs);
 	tests(100, ptrs);
 	tests(500, ptrs);
 	free(ptrs);
+	return NULL;
 }
 
 int
@@ -67,7 +68,7 @@ main(int argc, char *argv[])
 	assert(id_node == NODE_ID());
 
 	for(i=0; i<TEST_THD_NUM; i++) {
-		ret = pthread_create(&pthds[i], 0, thread_test_fn, (void *)i);
+		ret = pthread_create(&pthds[i], 0, thread_test_fn, (void *)(long)i);
 		if (ret) {
 			perror("pthread create of child\n");
 			exit(-1);

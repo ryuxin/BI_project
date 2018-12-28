@@ -32,7 +32,7 @@ get_index(size_t _size)
 static inline void *
 do_mmap(size_t size)
 {
-	return bi_faa((unsigned long *)&bump_addr, size);
+	return (void *)bi_faa((unsigned long *)&bump_addr, size);
 }
 
 static inline void
