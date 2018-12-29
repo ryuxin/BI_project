@@ -122,6 +122,7 @@ mem_mgr_init(void)
 		ps_list_head_append_d(&free_mem_head, &(lh->mems[i]));
 		addr += MEM_MGR_OBJ_SZ;
 	}
+	bi_malloc_init();
 }
 
 struct Free_mem_item *

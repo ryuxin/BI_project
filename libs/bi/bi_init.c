@@ -19,7 +19,7 @@
 volatile int running_cores;
 char recv_buf[MAX_MSG_SIZE];
 
-/************ TODO: add node local init wrter update fucntion, mem alloc, core id ***********/
+/************ TODO: add data structure specfic flush server_run ***********/
 static inline void *
 map_memory(const char *test_file, long file_size, void *map_addr)
 {

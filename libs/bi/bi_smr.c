@@ -60,7 +60,7 @@ static inline int
 __ps_in_lib(struct parsec *ps)
 { return ps->time_out <= ps->time_in; }
 
-/*********************** TODO add wirter log to flush chang flush from 1 not 0 ***************/
+/*********************** TODO add wirter log to flush change flush from 1 not 0 (line 81) ***************/
 static int
 bi_smr_flush_quiesce_queue(void)
 {
