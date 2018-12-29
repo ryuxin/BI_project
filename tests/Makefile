@@ -16,6 +16,7 @@ flush_period:
 
 mem_alloc:
 	@$(CC) mem_alloc_test.c $(CFLAGS) -o mem_alloc.test $(LDFLAGS)
+	@$(CC) malloc_test.c $(CFLAGS) -o malloc.test $(LDFLAGS)
 
 slab:
 	@$(CC) slab_test.c $(CFLAGS) -o slab.test $(LDFLAGS)
