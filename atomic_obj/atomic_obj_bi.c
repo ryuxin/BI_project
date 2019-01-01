@@ -9,6 +9,18 @@ struct atomic_obj_msg {
 };
 
 struct atomic_obj_msg msg_reply = { .val = -1 };
+static int start_id[NUM_NODES], end_id[NUM_NODES];
+extern int num_node, obj_num;
+
+static inline int
+id_to_node(int id)
+{
+	int i;
+	for(i=0; i<num_node; i++) {
+		if (id >= start_id[i] && id < end_id[i]) break;;
+	}
+	return i;
+}
 
 static inline void
 atomic_obj_write_svr(int id)
@@ -16,6 +28,8 @@ atomic_obj_write_svr(int id)
 	void *new_data, *old;
 	struct Test_obj *to;
 
+	assert(id >= start_id[NODE_ID()]);
+	assert(id <  end_id[NODE_ID()]);
 	to       = get_test_obj(id);
 	old      = bi_dereference_pointer_lazy(to->data);
 	new_data = bi_slab_alloc(slab_allocator);
@@ -40,6 +54,17 @@ bi_msg_handler(void *msg, size_t sz, int nid, int cid)
 	assert(r == 0);
 }
 
+void
+atomic_obj_flush(void)
+{
+	int nd = NODE_ID();
+	void *sa, *ea;
+
+	sa = get_test_obj(start_id[nd]);
+	ea = get_test_obj(end_id[nd]);
+	clwb_range_opt(sa, ea - sa);
+}
+
 static void *
 writer_thd_fn(void *arg)
 {
@@ -48,7 +73,7 @@ writer_thd_fn(void *arg)
 	mythd = (struct thread_data *)arg;
 	thd_set_affinity(pthread_self(), mythd->nd, mythd->cd);
 	bi_local_init_server(mythd->cd, mythd->ncore);
-	bi_server_run(bi_msg_handler);
+	bi_server_run(bi_msg_handler, atomic_obj_flush);
 	return NULL;
 }
 
@@ -74,7 +99,7 @@ atomic_obj_write(int id)
 	size_t s;
 
 	msg.val = id;
-	nd      = id % get_active_node_num();
+	nd      = id_to_node(id);
 	r       = rpc_send(nd, &msg, sizeof(struct atomic_obj_msg));
 	assert(r == 0);
 	s       = rpc_recv(nd, &msg, 1);
@@ -100,6 +125,21 @@ void
 spawn_writer(pthread_t *thd, int nd, int cd)
 {
 	int ret;
+	int nn, nc, q, i;
+
+	nn = num_node;
+	nc = obj_num/nn;
+	q  = obj_num % nn;
+	for(i=0; i<q; i++) {
+		start_id[i] = i*(nc + 1);
+		end_id[i]   = start_id[i] + nc+1;
+	}
+	for(; i<nn; i++) {
+		start_id[i] = i*nc + q;
+		end_id[i]   = start_id[i] + nc;
+	}
+	for(i=1; i<nn; i++) assert(end_id[i]-1 == start_id[i]);
+	assert(end[nn-1] == obj_num);
 
 	ret = pthread_create(thd, 0, writer_thd_fn, &tds[cd]);
 	if (ret) {

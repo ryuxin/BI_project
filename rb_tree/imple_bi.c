@@ -6,6 +6,8 @@
 
 #define MAX_FREE_BUF_SZ (1024)
 
+/************ TODO add app flush function only flush root? ********/
+
 struct rbtree_msg {
 	struct cb_root *tree;
 	uintptr_t key;
@@ -76,7 +78,7 @@ writer_thd_fn(void *arg)
 	mythd = (struct thread_data *)arg;
 	thd_set_affinity(pthread_self(), mythd->nd, mythd->cd);
 	bi_local_init_server(mythd->cd, mythd->ncore);
-	bi_server_run(rbtree_msg_handler);
+	bi_server_run(rbtree_msg_handler, NULL);
 	return NULL;
 }
 

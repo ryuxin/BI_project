@@ -19,7 +19,6 @@
 volatile int running_cores;
 char recv_buf[MAX_MSG_SIZE];
 
-/************ TODO: add data structure specfic flush server_run ***********/
 static inline void *
 map_memory(const char *test_file, long file_size, void *map_addr)
 {
@@ -95,7 +94,7 @@ bi_local_init_server(int core_id, int ncore)
 }
 
 void
-bi_server_run(bi_update_fn_t update_fn)
+bi_server_run(bi_update_fn_t update_fn, bi_flush_fn_t flush_fn)
 {
 	uint64_t flush_prev, tsc_prev, curr;
 	size_t s;
@@ -106,6 +105,7 @@ bi_server_run(bi_update_fn_t update_fn)
 	while (running_cores) {
 		curr = bi_local_rdtsc();
 		if (curr - flush_prev > QUISE_FLUSH_PERIOD) {
+			if (flush_fn) flush_fn();
 			bi_smr_flush();
 			bi_smr_reclaim();
 			flush_prev = curr;
@@ -116,6 +116,6 @@ bi_server_run(bi_update_fn_t update_fn)
 		}
 		s = rpc_recv_server(recv_buf, &nd, &cd);
 		if (!s) continue;
-		update_fn(recv_buf, s, nd, cd);
+		if (update_fn) update_fn(recv_buf, s, nd, cd);
 	}
 }

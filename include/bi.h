@@ -8,6 +8,7 @@
 #include "bi_smr.h"
 
 typedef void (*bi_update_fn_t)(void *msg, size_t sz, int nid, int cid);
+typedef void (*bi_flush_fn_t)(void);
 
 extern volatile int running_cores;
 
@@ -26,6 +27,6 @@ void bi_local_init_reader(int core_id);
 /* core local BI server/writer init */
 void bi_local_init_server(int core_id, int ncore);
 /* BI server run loop, finish after all other reader exit */
-void bi_server_run(bi_update_fn_t update_fn);
+void bi_server_run(bi_update_fn_t update_fn, bi_flush_fn_t flush_fn);
 
 #endif /* BI_HEADER_H */

@@ -17,7 +17,8 @@
 struct ps_slab_info *slab_allocator;
 char *temp_obj;
 struct thread_data tds[NUM_CORE_PER_NODE];
-static int num_node, num_core, id_node, obj_num;
+static int num_core, id_node;
+int num_node, obj_num;
 static size_t obj_sz;
 static char ops[N_OPS];
 static int tot_thput = 0;
