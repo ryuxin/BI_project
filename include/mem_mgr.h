@@ -49,6 +49,7 @@ struct Mem_layout {
 	void *parsec_area;
 	void *quies_area;
 	void *mem_list_area;
+	void *rcu_area;
 	struct Test_obj *test_obj_area;
 	void *data_area;
 	struct Per_core_info send_rings[NUM_NODES];
@@ -129,6 +130,12 @@ static inline struct Test_obj *
 get_test_obj(int id)
 {
 	return &(global_layout->test_obj_area[id]);
+}
+
+static inline void *
+get_rcu_area(void)
+{
+	return global_layout->rcu_area;
 }
 
 /************** debug functions ***********/

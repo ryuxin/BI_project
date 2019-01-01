@@ -15,6 +15,7 @@
 #include <sys/types.h>
 #include <sys/mman.h>
 #include "bi.h"
+#include "bi_rcu.h"
 
 volatile int running_cores;
 char recv_buf[MAX_MSG_SIZE];
@@ -65,6 +66,7 @@ bi_global_init_master(int node_id, int node_num, int core_num, const char *test_
 	bi_global_rtdsc();
 	clwb_range(mem, file_size);
 	mem_mgr_init();
+	bi_rcu_init_global((struct RCU_block *)get_rcu_area());
 
 	return mem;
 }

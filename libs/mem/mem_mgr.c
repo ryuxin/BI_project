@@ -5,6 +5,7 @@
 #include "mem_mgr.h"
 #include "rpc.h"
 #include "bi_smr.h"
+#include "bi_rcu.h"
 
 struct Mem_layout *global_layout;
 struct ps_list_head free_mem_head;
@@ -180,6 +181,10 @@ init_global_memory(void *global_memory, char *s)
 	addr = (void *)round_up_to_page(addr);
 	global_layout->mem_list_area = addr;
 	addr = __init_mem_free_lists(&global_layout->mem_free_lists, addr);
+
+	addr = (void *)round_up_to_page(addr);
+	global_layout->rcu_area = addr;
+	addr = addr + sizeof(struct RCU_block);
 
 	addr = (void *)round_up_to_page(addr);
 	global_layout->data_area = addr;
