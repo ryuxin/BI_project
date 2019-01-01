@@ -9,7 +9,7 @@
 #include "cbtree.h"
 
 #define TEST_FILE_NAME "/lfs/cache_test"
-#define TEST_FILE_SIZE (1024*1024*1024)
+#define TEST_FILE_SIZE (5*1024*1024*1024UL)
 #define TEST_FILE_ADDR ((void *)0x7fffb75f4000)
 #define N_OPS 10000000
 #define MULTIPLIER 5101

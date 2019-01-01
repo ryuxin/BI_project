@@ -139,7 +139,7 @@ spawn_writer(pthread_t *thd, int nd, int cd)
 		end_id[i]   = start_id[i] + nc;
 	}
 	for(i=1; i<nn; i++) assert(end_id[i]-1 == start_id[i]);
-	assert(end[nn-1] == obj_num);
+	assert(end_id[nn-1] == obj_num);
 
 	ret = pthread_create(thd, 0, writer_thd_fn, &tds[cd]);
 	if (ret) {

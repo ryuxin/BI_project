@@ -6,8 +6,8 @@
 /************** hardware setup ********/
 #define CACHE_LINE 64
 #define PAGE_SIZE 4096
-#define NUM_NODES 4
-#define NUM_CORE_PER_NODE 8
+#define NUM_NODES 8
+#define NUM_CORE_PER_NODE 28
 #define NUM_ALL_CORES (NUM_NODES * NUM_CORE_PER_NODE)
 #define CPU_HZ (2500000UL * 1000UL)
 #define CACHE_LINE_PAD(x) (CACHE_LINE - ((x) % CACHE_LINE))

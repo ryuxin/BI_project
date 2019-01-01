@@ -36,6 +36,12 @@ map_memory(const char *test_file, long file_size, void *map_addr)
 	close(fd);
 	printf("bi init: map global memory %p\n", mem);
 #endif
+
+#ifdef ENABLE_NON_CC_OP
+	printf("bi init: using Non CC memory\n");
+#else
+	printf("bi init: using CC memory\n");
+#endif
 	if (mem == MAP_FAILED) {
 		printf("mmap failed: file %s sz %ld\n", test_file, file_size);
 		exit(-1);
@@ -66,7 +72,6 @@ bi_global_init_master(int node_id, int node_num, int core_num, const char *test_
 	bi_global_rtdsc();
 	clwb_range(mem, file_size);
 	mem_mgr_init();
-	bi_rcu_init_global((struct RCU_block *)get_rcu_area());
 
 	return mem;
 }

@@ -62,4 +62,5 @@ join_wirter(pthread_t thd)
 	int ret;
 	pthread_join(thd, (void *)&ret);
 }
+
 #endif
