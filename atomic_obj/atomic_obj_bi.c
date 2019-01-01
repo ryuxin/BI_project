@@ -80,14 +80,31 @@ writer_thd_fn(void *arg)
 void
 atomic_obj_init(int num, size_t sz)
 {
-	int i;
 	struct Test_obj *to;
+	int nn, nc, q, i;
 
+	nn = num_node;
+	nc = obj_num/nn;
+	q  = obj_num % nn;
+	for(i=0; i<q; i++) {
+		start_id[i] = i*(nc + 1);
+		end_id[i]   = start_id[i] + nc+1;
+	}
+	for(; i<nn; i++) {
+		start_id[i] = i*nc + q;
+		end_id[i]   = start_id[i] + nc;
+	}
+
+	for(i=1; i<nn; i++) assert(end_id[i-1] == start_id[i]);
+	assert(end_id[nn-1] == obj_num);
 	assert(num <= MAX_TEST_OBJ_NUM);
+
 	for(i=0; i<num; i++) {
-		to       = get_test_obj(i);
-		to->sz   = sz;
-		to->data = bi_slab_alloc(slab_allocator);
+		if (id_to_node(i) == NODE_ID()) {
+			to       = get_test_obj(i);
+			to->sz   = sz;
+			to->data = bi_slab_alloc(slab_allocator);
+		}
 	}
 }
 
@@ -125,21 +142,6 @@ void
 spawn_writer(pthread_t *thd, int nd, int cd)
 {
 	int ret;
-	int nn, nc, q, i;
-
-	nn = num_node;
-	nc = obj_num/nn;
-	q  = obj_num % nn;
-	for(i=0; i<q; i++) {
-		start_id[i] = i*(nc + 1);
-		end_id[i]   = start_id[i] + nc+1;
-	}
-	for(; i<nn; i++) {
-		start_id[i] = i*nc + q;
-		end_id[i]   = start_id[i] + nc;
-	}
-	for(i=1; i<nn; i++) assert(end_id[i]-1 == start_id[i]);
-	assert(end_id[nn-1] == obj_num);
 
 	ret = pthread_create(thd, 0, writer_thd_fn, &tds[cd]);
 	if (ret) {

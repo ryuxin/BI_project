@@ -10,6 +10,7 @@ atomic_obj_init(int num, size_t sz)
 	int i;
 	struct Test_obj *to;
 
+	if (NODE_ID()) return ;
 	assert(num <= MAX_TEST_OBJ_NUM);
 	for(i=0; i<num; i++) {
 		to       = get_test_obj(i);

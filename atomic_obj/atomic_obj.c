@@ -17,7 +17,7 @@
 struct ps_slab_info *slab_allocator;
 char *temp_obj;
 struct thread_data tds[NUM_CORE_PER_NODE];
-static int num_core, id_node;
+static int num_core, id_node, updater = 50;
 int num_node, obj_num;
 static size_t obj_sz;
 static char ops[N_OPS];
@@ -33,6 +33,7 @@ usage(void)
 	"  -c N            number of core in each partition\n"
 	"  -m N            number of test objects\n"
 	"  -s N            size of test objects\n"
+	"  -u N            update ratio 0 - 100\n"
 	"  -h              help\n"
 	"\n");
 }
@@ -46,7 +47,7 @@ test_parse_args(int argc, char **argv)
 		usage();
 		exit(-1);
 	}
-	while ((opt=getopt(argc, argv, "i:n:c:m:s:h:")) != EOF) {
+	while ((opt=getopt(argc, argv, "i:n:c:m:s:u:h:")) != EOF) {
 		switch (opt) {
 		case 'i':
 			id_node  = atoi(optarg);
@@ -62,6 +63,9 @@ test_parse_args(int argc, char **argv)
 			break;
 		case 's':
 			obj_sz   = (size_t)atoi(optarg);
+			break;
+		case 'u':
+			updater = atoi(optarg);
 			break;
 		case 'h':
 			usage();
@@ -82,6 +86,10 @@ test_parse_args(int argc, char **argv)
 	}
 	if (obj_num > MAX_TEST_OBJ_NUM) {
 		printf("error: number of obj %d is out of range %d\n", obj_num, MAX_TEST_OBJ_NUM);
+		exit(-1);
+	}
+	if (updater < 0 || updater > 100) {
+		printf("error: update ratio %d is out of range 0 - 100\n", updater);
 		exit(-1);
 	}
 }
@@ -197,9 +205,9 @@ main(int argc, char *argv[])
 	printf("magic: %s\n", layout->magic);
 	memset(temp_obj, '$', obj_sz);
 	srand(time(NULL));
-	load_trace(N_OPS, 50, ops);
+	load_trace(N_OPS, updater, ops);
+	atomic_obj_init(obj_num, obj_sz);
 	if (!id_node) {
-		atomic_obj_init(obj_num, obj_sz);
 		usleep(100000);
 		bi_set_barrier(2);
 	} else {
@@ -219,6 +227,6 @@ main(int argc, char *argv[])
 	for (i = 0; i < num_core; i++) {
 		print_re(&tds[i]);
 	}
-	printf("node %d ncore %d obj num %d sz %lu thput %d\n", num_node, num_core, obj_num, obj_sz, tot_thput);
+	printf("node %d ncore %d obj num %d sz %lu update %d thput %d\n", num_node, num_core, obj_num, obj_sz, updater, tot_thput);
 	sleep(10);
 }
