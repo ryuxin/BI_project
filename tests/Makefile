@@ -1,8 +1,8 @@
 include ../Makefile.inc
 
-.PHONY: clean rpc_tests cache_micro flush_period mem_alloc slab smr
+.PHONY: clean rpc_tests cache_micro flush_period mem_alloc slab smr urcu
 
-all: clean rpc_tests cache_micro flush_period mem_alloc slab smr
+all: clean rpc_tests cache_micro flush_period mem_alloc slab smr urcu
 
 rpc_tests:
 	@$(CC) rpc_test_client.c $(CFLAGS) -o rpc_test_client.test $(LDFLAGS)
@@ -23,6 +23,9 @@ slab:
 
 smr:
 	@$(CC) smr_test.c $(CFLAGS) -o smr.test $(LDFLAGS)
+
+urcu:
+	@$(CC) urcu.c $(CFLAGS) -o urcu.test $(LDFLAGS) -lurcu -lbircu
 
 clean:
 	rm -rf *.o *.d *.test
