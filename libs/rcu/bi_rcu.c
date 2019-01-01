@@ -24,7 +24,6 @@ static inline void
 __gp_wait_init(struct urcu_wait_queue *w)
 {
 	w->stack.head = CDS_WFS_END;
-	w->stack.lock = PTHREAD_MUTEX_INITIALIZER;
 }
 
 static inline void
@@ -55,9 +54,12 @@ struct urcu_wait_node *
 bi_get_init_wait_node(void)
 {
 	struct RCU_wait_node *wn;
+	struct urcu_wait_node *w;
 
-	wn          = &(global_rcu->waits[NODE_ID()][CORE_ID()]);
-	wn->w.state = URCU_WAIT_WAITING;
+	wn           = &(global_rcu->waits[NODE_ID()][CORE_ID()]);
+	w            = &(wn->w);
+	w->state     = URCU_WAIT_WAITING;
+	w->node.next = NULL;
 	return &(wn->w);
 }
 
@@ -88,13 +90,13 @@ bi_get_self_ctr(void)
 void
 bi_gp_lock(void)
 {
-	ck_spinlock_mcs_lock(global_rcu->gp_lock, get_mcs_lock_cntxt());
+	ck_spinlock_mcs_lock(&(global_rcu->gp_lock), get_mcs_lock_cntxt());
 }
 
 void
 bi_gp_unlock(void)
 {
-	ck_spinlock_mcs_unlock(global_rcu->gp_lock, get_mcs_lock_cntxt());
+	ck_spinlock_mcs_unlock(&(global_rcu->gp_lock), get_mcs_lock_cntxt());
 }
 
 void
@@ -113,7 +115,7 @@ bi_rcu_init_global(struct RCU_block *rb)
 }
 
 void
-bi_rcu_init_local(void *)
+bi_rcu_init_local(void)
 {
 	global_rcu = (struct RCU_block *)get_rcu_area();
 }

@@ -8,10 +8,11 @@
 #include <math.h>
 #include <sys/mman.h>
 #include <urcu.h>
+#include "bi_rcu.h"
 #include "args.h"
 
 #define TEST_FILE_ADDR (NULL)
-#define N_OPS (1800)
+#define N_OPS (10000)
 #define N_LOG (N_OPS)
 #define TEST_THD_NUM 8
 
@@ -46,8 +47,10 @@ bench(void *arg)
 	int jump;
 
 	jump = (int)(long)arg;
+	thd_set_affinity(pthread_self(), 0, jump);
+	bi_local_init_reader(jump);
 	s = bi_local_rdtsc();
-	for (i = 0 ; i < N_OPS; i+=2*jump) {
+	for (i = jump; i < N_OPS; i+=(1+jump)) {
 		s1 = bi_local_rdtsc();
 
 		if (ops[i]) {
@@ -129,6 +132,7 @@ main(int argc, char *argv[])
 	mem = bi_global_init_master(id_node, num_node, num_core,
 				    TEST_FILE_NAME, TEST_FILE_SIZE, TEST_FILE_ADDR, 
 				    "BI urcu tests");
+	bi_rcu_init_global((struct RCU_block *)get_rcu_area());
 	layout = (struct Mem_layout *)mem;
 	printf("test: %s\n", layout->magic);
 	assert(id_node == NODE_ID());

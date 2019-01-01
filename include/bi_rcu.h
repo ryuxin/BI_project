@@ -1,3 +1,6 @@
+#ifndef  BI_RCU_H
+#define  BI_RCU_H
+
 #include <ck_spinlock.h>
 #include <urcu.h>
 #include "constant.h"
@@ -23,4 +26,6 @@ struct RCU_block {
 };
 
 void bi_rcu_init_global(struct RCU_block *rb);
-void bi_rcu_init_local(void *);
+void bi_rcu_init_local(void);
+
+#endif /* BI_RCU_H */
