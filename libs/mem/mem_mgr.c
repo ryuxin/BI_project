@@ -173,6 +173,10 @@ init_global_memory(void *global_memory, char *s)
 	global_layout->quies_area = addr;
 	addr = __init_quies_rings(&global_layout->quies_rings, addr);
 
+	addr = (void *)round_up_to_page(addr);
+	global_layout->wlog_area = addr;
+	addr = __init_quies_rings(&global_layout->wlog_rings, addr);
+
 	__init_mcs_locks();
 	addr = (void *)round_up_to_page(addr);
 	global_layout->test_obj_area = addr;

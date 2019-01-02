@@ -22,21 +22,29 @@ qsc_ring_dequeue(struct bi_qsc_ring *ql)
 }
 
 static inline int
-qsc_ring_enqueue(struct bi_qsc_ring *ql, struct ps_mheader *m)
+qsc_ring_enqueue(struct bi_qsc_ring *ql, void *m, size_t sz)
 {
-	void *addr;
+	struct quies_item *qi;
+
 	if (ql->head == (ql->tail + 1) % MAX_QUI_RING_LEN) {
 		printf("quisence ring full %d\n", MAX_QUI_RING_LEN);
 		assert(0);
 		return -1;
 	}
-	ql->ring[ql->tail].mh = m;
-	ql->ring[ql->tail].sz = bi_slab_objmem(m->slab->si);
-	addr                  = &(ql->ring[ql->tail]);
-	ql->tail              = (ql->tail+1) % MAX_QUI_RING_LEN;
-	clwb_range_opt(addr, CACHE_LINE);
+	qi           = &(ql->ring[ql->tail]);
+	qi->mh       = m;
+	qi->sz       = sz;
+	qi->tsc_free = bi_global_rtdsc();
+	ql->tail     = (ql->tail+1) % MAX_QUI_RING_LEN;
+	clwb_range_opt(qi, CACHE_LINE);
 	clwb_range(ql, CACHE_LINE);
 	return 0;
+}
+
+static inline int
+qsc_enqueue(struct bi_qsc_ring *ql, struct ps_mheader *m)
+{
+	return qsc_ring_enqueue(ql, m, bi_slab_objmem(m->slab->si));
 }
 
 static inline void
@@ -85,6 +93,38 @@ bi_smr_flush_quiesce_queue(void)
 		qsc_ring_flush(ql);
 	}
 	bi_mb();
+	return r;
+}
+
+int
+bi_smr_flush_wlog(void)
+{
+        int i, r, qsc_cpu, tot_cpu, curr;
+        struct bi_qsc_ring *ql;
+
+#ifndef ENABLE_WLOG
+	printf("Warning writer log is not enabled\n");
+	return -1;
+#endif
+
+	curr    = NODE_ID();
+        tot_cpu = get_active_node_num();
+        for (i = 1 ; i < tot_cpu; i++) {
+		/* Make sure we don't all hammer core 0... */
+		qsc_cpu = (curr + i) % tot_cpu;
+                assert(qsc_cpu != curr);
+                ql = get_wlog_ring(qsc_cpu);
+                clflush_range_opt(ql, sizeof(struct bi_qsc_ring));
+        }
+	bi_mb();
+
+	for (r=0, i = 1; i < tot_cpu; i++) {
+		qsc_cpu = (curr + i) % tot_cpu;
+                ql = get_wlog_ring(qsc_cpu);
+                r += (MAX_QUI_RING_LEN + ql->tail - ql->head) % MAX_QUI_RING_LEN;
+                qsc_ring_flush(ql);
+	}
+        bi_mb();
 	return r;
 }
 
@@ -151,7 +191,7 @@ bi_smr_reclaim(void)
 
 	while (1) {
 		a = qsc_ring_peek(ql);
-		if (!a || a->mh->tsc_free > qsc) break;
+		if (!a || a->tsc_free > qsc) break;
 
 		a = qsc_ring_dequeue(ql);
 		bi_slab_free(__ps_mhead_mem(a->mh));
@@ -162,17 +202,49 @@ bi_smr_reclaim(void)
 	return i;
 }
 
+int
+bi_wlog_reclaim(void)
+{
+	struct bi_qsc_ring *ql;
+        struct quies_item *a;
+        int i=0;
+        ps_tsc_t qsc;
+
+	ql   = get_wlog_ring(NODE_ID());
+	assert(ql);
+        a    = qsc_ring_peek(ql);
+	if (!a) return i;
+	qsc  = bi_global_rtdsc();
+        qsc -= QUISE_FLUSH_PERIOD;
+	while (1) {
+		a = qsc_ring_peek(ql);
+		if (!a || a->tsc_free > qsc) break;
+		a = qsc_ring_dequeue(ql);
+		i++;
+	}
+	clwb_range(ql, CACHE_LINE);
+	return i;
+}
+
+void
+bi_smr_wlog(void *buf)
+{
+#ifdef ENABLE_WLOG
+        assert(buf);
+        qsc_ring_enqueue(get_wlog_ring(NODE_ID()), buf, CACHE_LINE);
+#else
+	(void)buf;
+#endif
+}
+
 void
 bi_smr_free(void *buf)
 {
 	struct ps_mheader *m;
-	ps_tsc_t tsc;
 
 	assert(buf);
 	m   = __ps_mhead_get(buf);
-	tsc = bi_global_rtdsc();
-	__ps_mhead_setfree(m, tsc);
-	qsc_ring_enqueue(get_quies_ring(NODE_ID()), m);
+	qsc_enqueue(get_quies_ring(NODE_ID()), m);
 }
 
 void

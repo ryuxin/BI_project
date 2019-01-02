@@ -17,7 +17,6 @@ __ps_slab_check_consistency(struct ps_slab *s)
 	h = s->freelist;
 	for (i = 0 ; h ; i++) {
 		assert(h->slab == s);
-		assert(h->tsc_free != 0);
 		h = h->next;
 	}
 	assert(i == s->nfree);
@@ -117,7 +116,6 @@ __ps_slab_mem_free(void *buf, size_t allocsz, size_t headoff)
 	unsigned int max_nobjs;
 
 	h = __ps_mhead_get(buf);
-	assert(!__ps_mhead_isfree(h)); /* freeing freed memory? */
 	s = h->slab;
 	assert(s);
 	si = s->si;
@@ -126,7 +124,6 @@ __ps_slab_mem_free(void *buf, size_t allocsz, size_t headoff)
 	assert(si->nodeid == NODE_ID());
 	max_nobjs = __ps_slab_max_nobjs(si->obj_sz, allocsz, headoff);
 
-	__ps_mhead_setfree(h, SLAB_FREE);
 	next        = s->freelist;
 	s->freelist = h; 	/* TODO: should be atomic/locked */
 	h->next     = next;
@@ -182,7 +179,6 @@ __ps_slab_mem_alloc(struct ps_slab_info *si, size_t allocsz, size_t headoff)
 		assert(ps_list_singleton(s, list));
 		__slab_freelist_add(&si->el, s);
 	}
-	assert(!__ps_mhead_isfree(h));
 	__ps_slab_freelist_check(&si->fl);
 
 	return __ps_mhead_mem(h);

@@ -23,14 +23,15 @@ struct parsec {
 } __attribute__((aligned(CACHE_LINE), packed));
 
 struct quies_item {
-	struct ps_mheader *mh;
+	void *mh;
 	size_t sz;
+	uint64_t tsc_free;
 } __attribute__((packed));
 
 struct bi_qsc_ring {
-    int head, tail;
+	int head, tail;
 	char pad[CACHE_LINE - 2*sizeof(int)];
-    struct quies_item ring[MAX_QUI_RING_LEN];
+	struct quies_item ring[MAX_QUI_RING_LEN];
 } __attribute__((aligned(CACHE_LINE), packed));
 
 static inline void
@@ -46,6 +47,9 @@ qsc_ring_struct_init(struct bi_qsc_ring *p)
 	p->head = p->tail = 0;
 }
 
+int bi_smr_flush_wlog(void);
+void bi_smr_wlog(void *buf);
+int bi_wlog_reclaim(void);
 int bi_smr_flush(void);
 uint64_t bi_quiesce(void);
 int bi_smr_reclaim(void);

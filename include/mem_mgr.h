@@ -48,6 +48,7 @@ struct Mem_layout {
 	void *rpc_area;
 	void *parsec_area;
 	void *quies_area;
+	void *wlog_area;
 	void *mem_list_area;
 	void *rcu_area;
 	struct Test_obj *test_obj_area;
@@ -56,6 +57,7 @@ struct Mem_layout {
 	struct Per_core_info recv_rings[NUM_NODES];
 	struct Per_core_info parsec_times;
 	struct Per_node_info quies_rings;
+	struct Per_node_info wlog_rings;
 	struct Per_node_info mem_free_lists;
 	struct Per_node_info mem_start_addr;
 	struct Global_rdtsc time;
@@ -100,6 +102,12 @@ static inline void *
 get_quies_ring(int nid)
 {
 	return global_layout->quies_rings.info[nid];
+}
+
+static inline void *
+get_wlog_ring(int nid)
+{
+        return global_layout->wlog_rings.info[nid];
 }
 
 static inline void *

@@ -53,11 +53,11 @@ bi_publish_area(void *dst, void *src, size_t sz)
  * This DOES NOT invalidates ptr before dereference, so get possible stale value.
  * There is NO read log to record ptr and *ptr. 
  */
-#define bi_dereference_pointer_lazy(ptr)                   \
-				__extension__				               \
-				({					                       \
+#define bi_dereference_pointer_lazy(ptr)                                     \
+				__extension__				     \
+				({					     \
 				__typeof__(ptr) __p = BI_ACCESS_ONCE((ptr)); \
-				(__p);				                       \
+				(__p);				             \
 				})
 /*
  * read side interface.
@@ -65,13 +65,13 @@ bi_publish_area(void *dst, void *src, size_t sz)
  * This invalidates ptr before dereference, so get up-to-date value.
  * There is NO read log to record ptr and *ptr.
  */
-#define bi_dereference_pointer_aggressive(ptr)             \
-				__extension__				               \
-				({					                       \
+#define bi_dereference_pointer_aggressive(ptr)                             \
+				__extension__				   \
+				({					   \
 				bi_flush_cache(&(ptr));                    \
 				bi_rmb();                                  \
 				__typeof__(p) __p = BI_ACCESS_ONCE((ptr)); \
-				(__p);				                       \
+				(__p);				           \
 				})
 
 /*
@@ -80,9 +80,10 @@ bi_publish_area(void *dst, void *src, size_t sz)
  * This writes back ptr to memroy.
  * There is NO write log to record ptr and *ptr.
  */
-#define bi_publish_pointer(ptr, v)              \
-				do {                            \
+#define bi_publish_pointer(ptr, v)                                  \
+				do {                                \
 					__typeof__(ptr) __pv = (v); \
+					bi_smr_wlog((&(ptr)));         \
 					bi_wmb();                   \
 					*(&(ptr)) = __pv;           \
 					bi_wb_cache(&(ptr));        \

@@ -25,6 +25,7 @@
 #define MEM_MGR_OBJ_NUM (16)
 
 /******** PARSEC ************/
+//#define ENABLE_WLOG
 #define MAX_QUI_RING_LEN 1024
 #define GLOBAL_TSC_PERIOD (5000)
 #define QUISE_FLUSH_PERIOD (1000000)

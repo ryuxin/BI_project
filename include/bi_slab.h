@@ -7,7 +7,6 @@
 /* #define PS_SLAB_DEBUG 1 */
 
 typedef uint64_t ps_tsc_t; 	/* our time-stamp counter representation */
-typedef ps_tsc_t ps_free_token_t;
 struct ps_slab_info;
 
 /* The header for a slab. */
@@ -35,7 +34,6 @@ typedef enum {
 
 /* Memory header */
 struct ps_mheader {
-	ps_free_token_t  tsc_free;
 	struct ps_slab    *slab;   /* slab header ptr */
 	struct ps_mheader *next;   /* slab freelist ptr */
 } __attribute__((packed));
@@ -57,29 +55,16 @@ static inline void *
 __ps_mhead_mem(struct ps_mheader *h)
 { return &h[1]; }
 
-static inline int
-__ps_mhead_isfree(struct ps_mheader *h)
-{ return h->tsc_free == SLAB_FREE; }
-
 static inline void
 __ps_mhead_reset(struct ps_mheader *h)
 {
-	h->tsc_free = SLAB_IN_USE;
 	h->next     = NULL;
-}
-
-/* If you don't need memory anymore, set it free! Assumes: token != 0*/
-static inline void
-__ps_mhead_setfree(struct ps_mheader *h, ps_free_token_t token)
-{
-	h->tsc_free = token; /* Assumption: token must be guaranteed to be non-zero */
 }
 
 static inline void
 __ps_mhead_init(struct ps_mheader *h, struct ps_slab *s)
 {
 	h->slab     = s;
-	__ps_mhead_setfree(h, SLAB_FREE);
 }
 
 /*********** some slab internals **/
