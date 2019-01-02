@@ -36,7 +36,7 @@ do_mmap(size_t size)
 }
 
 static inline void
-__small_free(void*_ptr,size_t _size)
+__small_free(void *_ptr, size_t _size)
 {
 	__alloc_t* ptr = BLOCK_START(_ptr), *prev;
 	size_t size    = _size;
@@ -96,7 +96,7 @@ bi_free(void *ptr)
 {
 	size_t size;
 	if (ptr) {
-		size=((__alloc_t*)BLOCK_START(ptr))->size;
+		size = ((__alloc_t*)BLOCK_START(ptr))->size;
 		assert(size);
 		assert(size <= __MAX_SMALL_SIZE);
 		__small_free(ptr,size);
@@ -112,7 +112,7 @@ bi_malloc(size_t size)
 	size += sizeof(__alloc_t);
 	assert(size <= __MAX_SMALL_SIZE);
 	need  = GET_SIZE(size);
-    ptr   = __small_malloc(need);
+	ptr   = __small_malloc(need);
 	assert(ptr);
 	ptr->size = need;
 	return BLOCK_RET(ptr);

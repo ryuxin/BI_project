@@ -26,6 +26,7 @@ tests(size_t sz, void **ptrs)
 		for (j = i ; j < ITER ; j++) {
 			ptrs[j] = bi_malloc(sz);
 			assert(ptrs[j]);
+			memset(ptrs[j], '$', 2);
 		}
 		for (j = i ; j < ITER ; j++) {
 			bi_free(ptrs[j]);
