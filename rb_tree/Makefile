@@ -3,9 +3,9 @@ include Makefile.inc
 CFILES  = $(wildcard *.c)
 COBJS   = $(patsubst %.c,%.o,$(CFILES))
 
-.PHONY: clean all bi
+.PHONY: clean all bi urcu
 
-all: bi
+all: bi urcu
 
 bi: $(CFILES)
 	@rm -rf *.o
@@ -13,9 +13,9 @@ bi: $(CFILES)
 	@rm -rf *.o
 	@$(CC) $^ $(CFLAGS) -DRBTREE_BI -o rbtree_bi_bench.test $(LDFLAGS)
 
-lock: $(CFILES)
+urcu: $(CFILES)
 	@rm -rf *.o
-	@$(CC) $^ $(CFLAGS) -DATOMIC_OBJ_LOCK -o aobj_lock.test $(LDFLAGS)
+	@$(CC) $^ $(CFLAGS) -DRBTREE_URCU -o rbtree_rcu_bench.test $(LDFLAGS) -lurcu -lbircu
 
 clean:
 	@rm -f *.o *.d *.test *~
