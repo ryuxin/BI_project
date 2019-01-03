@@ -209,8 +209,8 @@ main(int argc, char *argv[])
 	printf("magic: %s\n", layout->magic);
 	srand(time(NULL));
 	load_trace(N_OPS, 50, ops);
+	cb_tree_init(root, obj_num, krange);
 	if (!id_node) {
-		cb_tree_init(root, obj_num, krange);
 		usleep(100000);
 		bi_set_barrier(2);
 	} else {

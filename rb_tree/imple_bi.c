@@ -32,7 +32,15 @@ TreeBBFreeNode(node_t *n)
 	free_buf[totalFreed++] = n;
 }
 
-static void
+static inline void
+free_nodes_seq(void)
+{
+	for(; totalFreed>0; totalFreed--) {
+		bi_slab_free(free_buf[totalFreed - 1]);
+	}
+}
+
+static inline void
 free_nodes(void)
 {
 	for(; totalFreed>0; totalFreed--) {
@@ -40,16 +48,23 @@ free_nodes(void)
 	}
 }
 
-static void
+static inline void
 cb_insert_svr(struct cb_root *tree, uintptr_t key, void *value)
 {
 	TreeBB_Insert(tree, key, value);
 }
 
-static void *
+static inline void *
 cb_erase_svr(struct cb_root *tree, uintptr_t key)
 {
 	return TreeBB_Delete(tree, key);
+}
+
+static void
+app_flush(void)
+{
+	bi_smr_flush_wlog();
+	bi_wlog_reclaim();
 }
 
 void
@@ -78,7 +93,7 @@ writer_thd_fn(void *arg)
 	mythd = (struct thread_data *)arg;
 	thd_set_affinity(pthread_self(), mythd->nd, mythd->cd);
 	bi_local_init_server(mythd->cd, mythd->ncore);
-	bi_server_run(rbtree_msg_handler, NULL);
+	bi_server_run(rbtree_msg_handler, app_flush);
 	return NULL;
 }
 
@@ -134,10 +149,14 @@ void
 cb_tree_init(struct cb_root *tree, int tree_sz, int range)
 {
 	long i, j, r;
+
+	if (NODE_ID()) return ;
 	tree->root = NULL;
 	r = range / tree_sz;
 	for(j=0, i=0; i<tree_sz; i++) {
 		cb_insert_svr(tree, (k_t)j, (void *)j);
+		free_nodes_seq();
+		qsc_ring_struct_init((struct bi_qsc_ring *)get_wlog_ring(NODE_ID()));
 		j = (j + r) % range;
 	}
 	assert(nodeSize(tree->root) == tree_sz);

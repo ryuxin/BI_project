@@ -129,13 +129,11 @@ balanced:
 		if (replace == 0) {
 			assert(GET(cur->right) == right);
 			// XXX rcu_assign_pointer
-			bi_wmb();
-			SET(cur->left, left);
+			bi_publish_pointer(cur->left.val, left);
 		} else {
 			assert(GET(cur->left) == left);
 			// XXX rcu_assign_pointer
-			bi_wmb();
-			SET(cur->right, right);
+			bi_publish_pointer(cur->right.val, right);
 		}
 		SET(cur->size, 1 + nodeSize(left) + nodeSize(right));
 		return cur;
