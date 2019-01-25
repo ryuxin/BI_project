@@ -13,6 +13,7 @@ cache_micro:
 
 flush_period:
 	@$(CC) flush_period.c $(CFLAGS) -o flush_period.test $(LDFLAGS) -lrt
+	@$(CC) flush_period_multi_thd.c $(CFLAGS) -o flush_period_2thd.test $(LDFLAGS)
 
 mem_alloc:
 	@$(CC) mem_alloc_test.c $(CFLAGS) -o mem_alloc.test $(LDFLAGS)

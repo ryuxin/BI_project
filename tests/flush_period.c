@@ -13,20 +13,23 @@
 #include "hw_util.h"
 
 #define MEM_SZ         (1<<26) 	/* 64MB */
-#define NUM_SECOND     60
+#define NUM_SECOND     10
 #define MAGIC_TIMER    -1
-#define ENABLE_ALWAYS_FLUSH
-#define LOCAL_MEM_TEST
+//#define LOCAL_MEM_TEST
 
 #ifdef LOCAL_MEM_TEST
-volatile char mem[MEM_SZ] __attribute__((aligned(CACHE_LINE)));
+char mem[MEM_SZ] __attribute__((aligned(CACHE_LINE)));
 #else
-volatile char *mem;
+void *mem;
 #endif
-char tmem[2*CACHE_LINE];
+char tmem[MEM_SZ];
 
 volatile unsigned long long done = 0, nread = 0, ntick = 0;
 volatile int ncache, ntimer;
+static volatile uint64_t use_result_dummy = 0;
+
+void
+use_int(int result) { use_result_dummy += result; }
 
 void timer_handler(int a)
 {
@@ -34,10 +37,10 @@ void timer_handler(int a)
 
 	ntick++;
 	if (ntimer != MAGIC_TIMER) {
-		clflush_range((void *)mem, ncache * CACHE_LINE);
+		clflush_range(mem, ncache * CACHE_LINE);
 	}
 	if (ntimer == MAGIC_TIMER || ntick == (unsigned long long)NUM_SECOND*ntimer) {
-		printf("#timer %d #cache %d thput %llu\n", ntimer, ncache, nread/NUM_SECOND);
+		printf("#timer %d #cache %d thput %llu\n", ntimer, ncache, nread/NUM_SECOND*64/1024/1024);
 		done = 1;
 	}
 }
@@ -75,52 +78,58 @@ int timer_start(void)
 		itval.it_value.tv_sec     = 0;
 		itval.it_value.tv_nsec    = 1000000000/ntimer;
 	}
-	ret = timer_settime (timer_id, 0, &itval, NULL);
+	ret = timer_settime(timer_id, 0, &itval, NULL);
 	return ret;
 }
 
-void bench(void)
+void bench(int flush)
 {
-	int i;
-	char *pos;
+        register int *lastone = (int *)((char *)mem + ncache*CACHE_LINE);
+        register int sum = 0;
 
 	while (!done) {
-		pos = (char *)mem;
-		for (i=0; i<ncache; i++) {
-#ifdef ENABLE_ALWAYS_FLUSH
-			clflush_range(pos, CACHE_LINE);
-#endif
-			memcpy(tmem, pos, CACHE_LINE);
-			pos  += CACHE_LINE;
-			nread++;
-		}
+		if (flush) clflush_range(mem, ncache*CACHE_LINE);
+
+                register int *p = mem;
+                while (p <= lastone) {
+                        sum +=
+#define DOIT(i) p[i]+
+                        DOIT(0) DOIT(4) DOIT(8) DOIT(12) DOIT(16) DOIT(20) DOIT(24)
+                        DOIT(28) DOIT(32) DOIT(36) DOIT(40) DOIT(44) DOIT(48) DOIT(52)
+                        DOIT(56) DOIT(60) DOIT(64) DOIT(68) DOIT(72) DOIT(76)
+                        DOIT(80) DOIT(84) DOIT(88) DOIT(92) DOIT(96) DOIT(100)
+                        DOIT(104) DOIT(108) DOIT(112) DOIT(116) DOIT(120)
+                        p[124];
+                        p +=  128;
+                }
+                use_int(sum);
+//		memcpy(tmem, mem, ncache*CACHE_LINE);
+		nread += ncache;
 	}
 }
 
 int main(int argc, char *argv[])
 {
 	int r;
+	int flush;
 #ifndef LOCAL_MEM_TEST
 	char *file = "/lfs/cache_test";
 	int fd = open(file, O_CREAT | O_RDWR, 0666);
 	ftruncate(fd, MEM_SZ);
 	mem = mmap(0, MEM_SZ, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-	memset(mem, 0, MEM_SZ);
 #endif
 
-	if (argc != 3) {
-		printf("usage: %s #timer #cache\n", argv[0]);
+	if (argc != 4) {
+		printf("usage: %s #timer #cache flush\n", argv[0]);
 		exit(-1);
 	}
-	ntimer   = atoi(argv[1]);
-	ncache   = atoi(argv[2]);
+	ntimer = atoi(argv[1]);
+	ncache = atoi(argv[2]);
+	flush  = atoi(argv[3]);
 	if (ncache > MEM_SZ/CACHE_LINE) {
 		printf("working set is larger than max file size\n");
 		exit(-1);
 	}
-#ifdef ENABLE_ALWAYS_FLUSH
-	assert(ntimer == MAGIC_TIMER);
-#endif
 
 	r = signal_init();
 	if (r) {
@@ -130,7 +139,7 @@ int main(int argc, char *argv[])
 
 	r = timer_start();
 	if (r) goto ret;
-	bench();
+	bench(flush);
 ret:
 #ifndef LOCAL_MEM_TEST
 	munmap(mem, MEM_SZ);
