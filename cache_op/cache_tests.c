@@ -147,7 +147,7 @@ init_random_access(void)
 /* in global scope to force the compiler to emit the writes */
 unsigned int accum = 0;
 
-void
+static inline void
 walk(access_t how, pattern_t pat, size_t sz)
 {
 	unsigned int i;
@@ -255,7 +255,7 @@ main(void)
 
 //	exec("Flush + read", (access_t[2]){FLUSHOPT, READ}, 2, SEQUENTIAL);
 //	exec("Flush + modify", (access_t[2]){FLUSHOPT, WRITE}, 2, SEQUENTIAL);
-
+/*
 	exec("Read + flush", (access_t[2]){READ, FLUSH}, 2, SEQUENTIAL);
 	exec("Modify + flush", (access_t[2]){WRITE, FLUSH}, 2, SEQUENTIAL);
 	exec("Flush + flush", (access_t[2]){FLUSH, FLUSH}, 2, SEQUENTIAL);
@@ -263,6 +263,14 @@ main(void)
 	exec("Read + flushopt", (access_t[2]){READ, FLUSHOPT}, 2, SEQUENTIAL);
 	exec("Modify + flushopt", (access_t[2]){WRITE, FLUSHOPT}, 2, SEQUENTIAL);
 	exec("Flush + flushopt", (access_t[2]){FLUSH, FLUSHOPT}, 2, SEQUENTIAL);
+*/
+	exec("Read + flush", (access_t[2]){READ, FLUSH}, 2, RANDOM);
+	exec("Modify + flush", (access_t[2]){WRITE, FLUSH}, 2, RANDOM);
+	exec("Flush + flush", (access_t[2]){FLUSH, FLUSH}, 2, RANDOM);
+	
+	exec("Read + flushopt", (access_t[2]){READ, FLUSHOPT}, 2, RANDOM);
+	exec("Modify + flushopt", (access_t[2]){WRITE, FLUSHOPT}, 2, RANDOM);
+	exec("Flush + flushopt", (access_t[2]){FLUSH, FLUSHOPT}, 2, RANDOM);
 
 	/* printf("Cycles per page of the operations last in the list of operations (random)\n\n"); */
 
