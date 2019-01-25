@@ -229,4 +229,5 @@ main(int argc, char *argv[])
 	}
 	printf("node %d ncore %d obj num %d sz %lu update %d thput %d\n", num_node, num_core, obj_num, obj_sz, updater, tot_thput);
 	sleep(10);
+	return 0;
 }

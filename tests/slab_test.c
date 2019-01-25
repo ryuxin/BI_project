@@ -201,6 +201,7 @@ main(int argc, char *argv[])
 	test_correctness();
 	test_perf();
 	test_producer_comsumer();
+	printf("BI slab unit tests:  SUCCESS!\n");
 
 	return 0;
 }

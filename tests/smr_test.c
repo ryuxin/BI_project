@@ -261,6 +261,7 @@ main(int argc, char *argv[])
 	test_bi();
 	printf("Testing bi flush.\n");
 	test_flush();
+        printf("BI smr unit tests:  SUCCESS!\n");
 
 	return 0;
 }

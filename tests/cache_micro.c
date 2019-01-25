@@ -70,8 +70,8 @@ set_prio(void)
 }
 
 #define MEM_SZ     (1<<26) 	/* 64MB */
-#define ITER       256
-#define LOCAL_MEM_TEST
+#define ITER       1024
+//#define LOCAL_MEM_TEST
 
 char tmem[MEM_SZ];
 #ifdef LOCAL_MEM_TEST
@@ -189,25 +189,25 @@ main(void)
 
 	exec("Sizes", (access_t[1]){SIZES}, 1);
 
-	exec("Read + Read", (access_t[2]){READ, READ}, 2);
-	exec("Modify + Read", (access_t[2]){WRITE, READ}, 2);
-	exec("Flush + Read", (access_t[2]){FLUSHOPT, READ}, 2);
+	exec("Read+Read", (access_t[2]){READ, READ}, 2);
+	exec("Modify+Read", (access_t[2]){WRITE, READ}, 2);
+	exec("Flush+Read", (access_t[2]){FLUSHOPT, READ}, 2);
 
-	exec("Read + Modify", (access_t[2]){READ, WRITE}, 2);
-	exec("Modify + Modify", (access_t[2]){WRITE, WRITE}, 2);
-	exec("Flush + Modify", (access_t[2]){FLUSHOPT, WRITE}, 2);
+	exec("Read+Modify", (access_t[2]){READ, WRITE}, 2);
+	exec("Modify+Modify", (access_t[2]){WRITE, WRITE}, 2);
+	exec("Flush+Modify", (access_t[2]){FLUSHOPT, WRITE}, 2);
 
-	exec("Read + flush", (access_t[2]){READ, FLUSH}, 2);
-	exec("Modify + flush", (access_t[2]){WRITE, FLUSH}, 2);
-	exec("Flush + flush", (access_t[2]){FLUSHOPT, FLUSH}, 2);
+	exec("Read+flush", (access_t[2]){READ, FLUSH}, 2);
+	exec("Modify+flush", (access_t[2]){WRITE, FLUSH}, 2);
+	exec("Flush+flush", (access_t[2]){FLUSHOPT, FLUSH}, 2);
 
-	exec("Read + flushopt", (access_t[2]){READ, FLUSHOPT}, 2);
-	exec("Modify + flushopt", (access_t[2]){WRITE, FLUSHOPT}, 2);
-	exec("Flush + flushopt", (access_t[2]){FLUSHOPT, FLUSHOPT}, 2);
+	exec("Read+flushopt", (access_t[2]){READ, FLUSHOPT}, 2);
+	exec("Modify+flushopt", (access_t[2]){WRITE, FLUSHOPT}, 2);
+	exec("Flush+flushopt", (access_t[2]){FLUSHOPT, FLUSHOPT}, 2);
 
-	exec("Read + clwb", (access_t[2]){READ, CLWB}, 2);
-	exec("Modify + clwb", (access_t[2]){WRITE, CLWB}, 2);
-	exec("Flush + clwb", (access_t[2]){FLUSHOPT, CLWB}, 2);
+	exec("Read+clwb", (access_t[2]){READ, CLWB}, 2);
+	exec("Modify+clwb", (access_t[2]){WRITE, CLWB}, 2);
+	exec("Flush+clwb", (access_t[2]){FLUSHOPT, CLWB}, 2);
 	/* printf("Cycles per page of the operations last in the list of operations (random)\n\n"); */
 
 	/* exec("Sizes", (access_t[1]){SIZES}, 1, RANDOM); */
