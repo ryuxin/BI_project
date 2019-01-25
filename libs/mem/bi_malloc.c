@@ -18,7 +18,7 @@ typedef struct {
 } __alloc_t;
 
 static void *bump_addr, *end_addr;
-static __alloc_t* __small_mem[9];
+static __thread __alloc_t* __small_mem[9];
 
 static inline size_t
 get_index(size_t _size) 
@@ -32,7 +32,12 @@ get_index(size_t _size)
 static inline void *
 do_mmap(size_t size)
 {
-	return (void *)bi_faa((unsigned long *)&bump_addr, size);
+	void *old_b, *new_b;
+	do {
+		old_b = bump_addr;
+		new_b = bump_addr + size;
+        } while (unlikely(!bi_cas((unsigned long *)&bump_addr, (unsigned long )old_b, (unsigned long )new_b)));
+	return old_b;
 }
 
 static inline void

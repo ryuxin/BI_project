@@ -45,7 +45,7 @@ thread_test_fn(void *arg)
 	ptrs = (void **)malloc(ITER * sizeof(void *));
 	tests(10, ptrs);
 	tests(100, ptrs);
-	tests(500, ptrs);
+	tests(400, ptrs);
 	free(ptrs);
 	return NULL;
 }
