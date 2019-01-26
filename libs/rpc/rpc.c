@@ -45,8 +45,12 @@ rpc_recv_ext(struct msg_queue *q, int *pos, void *data, int spin)
 		mn = &(q->ring[cur]);
 		bi_flush_cache(&mn->meta);
 		if (!mn->meta.use) continue;
+		bi_ccb();
 		ret_sz = mn->meta.size;
-		bi_dereference_area_aggressive(data, mn->data, ret_sz);
+		clflush_range(mn->data, ret_sz);
+		bi_inst_bar();
+		memcpy(data, mn->data, ret_sz);
+//		bi_dereference_area_aggressive(data, mn->data, ret_sz);
 		mn->meta.size = 0;
 		mn->meta.use  = 0;
 		bi_wb_cache(&mn->meta);

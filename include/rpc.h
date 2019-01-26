@@ -6,7 +6,7 @@
 struct msg_meta {
 	size_t size;   /* message size */
 	volatile int use;
-} __attribute__((aligned(CACHE_LINE), packed));
+} __attribute__((aligned(2*CACHE_LINE), packed));
 
 struct msg_node {
 	struct msg_meta meta;
