@@ -78,16 +78,14 @@ bi_publish_area(void *dst, void *src, size_t sz)
  * write side interface.
  * set ptr with v.
  * This writes back ptr to memroy.
- * There is NO write log to record ptr and *ptr.
  */
 #define bi_publish_pointer(ptr, v)                                  \
 				do {                                \
 					__typeof__(ptr) __pv = (v); \
-					bi_smr_wlog((&(ptr)));         \
-					bi_wmb();                   \
 					*(&(ptr)) = __pv;           \
 					bi_wb_cache(&(ptr));        \
 					bi_wmb();                   \
+					bi_smr_wlog((&(ptr)));         \
 				} while (0)
 
 #endif /* BI_POINTER_H */

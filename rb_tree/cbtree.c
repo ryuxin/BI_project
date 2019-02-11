@@ -139,11 +139,11 @@ balanced:
 		if (replace == 0) {
 			assert(GET(cur->right) == right);
 			// XXX rcu_assign_pointer
-			bi_publish_pointer(cur->left.val, left);
+			if (cur->left.val != left) bi_publish_pointer(cur->left.val, left);
 		} else {
 			assert(GET(cur->left) == left);
 			// XXX rcu_assign_pointer
-			bi_publish_pointer(cur->right.val, right);
+			if (cur->right.val != right) bi_publish_pointer(cur->right.val, right);
 		}
 		SET(cur->size, 1 + nodeSize(left) + nodeSize(right));
 		return cur;
@@ -185,7 +185,8 @@ TreeBB_Insert(struct cb_root *tree, uintptr_t key, void *value)
 {
 	kv_t kv = {key, value};
 	node_t *nroot = insert(tree->root, &kv);
-	bi_publish_pointer(tree->root, nroot);
+	bi_wmb();
+	if (tree->root != nroot) bi_publish_pointer(tree->root, nroot);
 }
 
 static node_t *
@@ -240,7 +241,8 @@ TreeBB_Delete(struct cb_root *tree, uintptr_t key)
 {
 	void *deleted;
 	node_t *nroot = delete(tree->root, key, &deleted);
-	bi_publish_pointer(tree->root, nroot);
+	bi_wmb();
+	if (tree->root != nroot) bi_publish_pointer(tree->root, nroot);
 	return deleted;
 }
 

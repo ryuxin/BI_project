@@ -22,7 +22,12 @@ struct rbtree_msg msg_reply = { .type = -1 };
 node_t *
 TreeBBNewNode(void)
 {
-	return bi_slab_alloc(slab_allocator);
+	node_t *r;
+	r = bi_slab_alloc(slab_allocator);
+#ifdef ENABLE_WLOG
+	bi_smr_wlog(r);
+#endif
+	return r;
 }
 
 void
