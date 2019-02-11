@@ -215,6 +215,7 @@ main(int argc, char *argv[])
 
 	// sizeof(node_t) = 40
 	test_parse_args(argc, argv);
+	thd_set_affinity(pthread_self(), id_node, 0);
 	if (!id_node) {
 		mem = bi_global_init_master(id_node, num_node, num_core,
 					    TEST_FILE_NAME, TEST_FILE_SIZE, TEST_FILE_ADDR, 
