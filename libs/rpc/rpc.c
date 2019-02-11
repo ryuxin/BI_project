@@ -35,12 +35,14 @@ rpc_send_ext(struct msg_queue *q, int *pos, void *data, size_t size)
 	int cur = (*pos) % MSG_NUM;
 
 	mn = &(q->ring[cur]);
-	bi_flush_cache(&mn->meta);
+	clflush_range(&mn->meta, CACHE_LINE);
+	bi_inst_bar();
 	if (unlikely(mn->meta.use)) return -1;
-	bi_publish_area(mn->data, data, size);
+	memcpy(mn->data, data, size);
+	clwb_range(mn->data, size);
 	mn->meta.size = size;
 	mn->meta.use  = 1;
-	bi_wb_cache(&mn->meta);
+	clwb_range(&mn->meta, CACHE_LINE);
 	*pos = cur + 1;
 	return 0;
 }
@@ -54,7 +56,8 @@ rpc_recv_ext(struct msg_queue *q, int *pos, void *data, int spin)
 
 	do {
 		mn = &(q->ring[cur]);
-		bi_flush_cache(&mn->meta);
+		clflush_range(&mn->meta, CACHE_LINE);
+		bi_inst_bar();
 		if (!mn->meta.use) continue;
 		bi_ccb();
 		ret_sz = mn->meta.size;
@@ -64,7 +67,7 @@ rpc_recv_ext(struct msg_queue *q, int *pos, void *data, int spin)
 //		bi_dereference_area_aggressive(data, mn->data, ret_sz);
 		mn->meta.size = 0;
 		mn->meta.use  = 0;
-		bi_wb_cache(&mn->meta);
+		clwb_range(&mn->meta, CACHE_LINE);
 		*pos = cur + 1;
 	} while (!ret_sz && spin);
 	assert(ret_sz < MAX_MSG_SIZE);
