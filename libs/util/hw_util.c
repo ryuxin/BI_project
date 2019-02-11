@@ -109,7 +109,7 @@ load_trace(long nops, unsigned int percent_update, char *ops)
 uint64_t
 bi_global_rtdsc()
 {
-	if (NODE_ID() == 0) {
+	if (NODE_ID() == 0 && CORE_ID() == 0) {
 		global_layout->time.tsc = bi_local_rdtsc();
 		clwb_range(&global_layout->time, CACHE_LINE);
 	} else {

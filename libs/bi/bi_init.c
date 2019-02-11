@@ -117,7 +117,7 @@ bi_server_run(bi_update_fn_t update_fn, bi_flush_fn_t flush_fn)
 			bi_smr_reclaim();
 			flush_prev = curr;
 		}
-		if (curr - tsc_prev > GLOBAL_TSC_PERIOD) {
+		if (NODE_ID() == 0 && curr - tsc_prev > GLOBAL_TSC_PERIOD) {
 			bi_global_rtdsc();
 			tsc_prev = curr;
 		}
