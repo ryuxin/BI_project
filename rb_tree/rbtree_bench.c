@@ -220,11 +220,9 @@ main(int argc, char *argv[])
 		mem = bi_global_init_master(id_node, num_node, num_core,
 					    TEST_FILE_NAME, TEST_FILE_SIZE, TEST_FILE_ADDR, 
 					    "rb tree benchmark");
-		bi_set_barrier(1);
 	} else {
 		mem = bi_global_init_slave(id_node, num_node, num_core,
 					   TEST_FILE_NAME, TEST_FILE_SIZE, TEST_FILE_ADDR);
-		bi_wait_barrier(1);
 		mem_mgr_init();
 	}
 	layout         = (struct Mem_layout *)mem;
