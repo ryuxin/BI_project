@@ -18,6 +18,7 @@ struct rbtree_msg {
 static int totalFreed = 0;
 static node_t *free_buf[MAX_FREE_BUF_SZ];
 struct rbtree_msg msg_reply = { .type = -1 };
+static struct cb_root *g_tree;
 
 node_t *
 TreeBBNewNode(void)
@@ -66,7 +67,28 @@ cb_erase_svr(struct cb_root *tree, uintptr_t key)
 }
 
 static void
-app_flush(void)
+cb_flush(node_t *node)
+{
+	while (node) {
+		clwb_range(node, sizeof(node_t));
+		cb_flush(GET(node->left));
+		node = GET(node->right);
+	}
+	return ;
+}
+
+static void
+app_flush_tree(void)
+{
+	node_t *node;
+
+	clwb_range(g_tree, sizeof(struct cb_root));
+	node = g_tree->root;
+	cb_flush(node);
+}
+
+static void
+app_flush_wlog(void)
 {
 	bi_smr_flush_wlog();
 	bi_wlog_reclaim();
@@ -98,7 +120,11 @@ writer_thd_fn(void *arg)
 	mythd = (struct thread_data *)arg;
 	thd_set_affinity(pthread_self(), mythd->nd, mythd->cd);
 	bi_local_init_server(mythd->cd, mythd->ncore);
-	bi_server_run(rbtree_msg_handler, app_flush);
+#ifdef ENABLE_WLOG
+	bi_server_run(rbtree_msg_handler, app_flush_wlog);
+#else
+	bi_server_run(rbtree_msg_handler, app_flush_tree);
+#endif
 	return NULL;
 }
 
@@ -156,6 +182,7 @@ cb_tree_init(struct cb_root *tree, int tree_sz, int range)
 {
 	long i, j, r;
 
+	g_tree = tree;
 	if (NODE_ID()) return ;
 	tree->root = NULL;
 	r = range / tree_sz;
