@@ -62,8 +62,8 @@ qsc_ring_enqueue(struct bi_qsc_ring *ql, void *m, size_t sz)
 	qi->mh       = m;
 	qi->sz       = sz;
 	qi->tsc_free = bi_global_rtdsc();
+	clwb_range(qi, CACHE_LINE);
 	ql->tail     = (ql->tail+1) % MAX_QUI_RING_LEN;
-	clwb_range_opt(qi, CACHE_LINE);
 	clwb_range(ql, CACHE_LINE);
 	return 0;
 }
@@ -261,6 +261,7 @@ bi_smr_wlog(void *buf)
         qsc_ring_enqueue(get_wlog_ring(NODE_ID()), buf, CACHE_LINE);
 #else
 	(void)buf;
+	bi_mb();
 #endif
 }
 

@@ -70,7 +70,7 @@ __ps_mhead_init(struct ps_mheader *h, struct ps_slab *s)
 /*********** some slab internals **/
 static inline unsigned long
 __ps_slab_objmemsz(size_t obj_sz)
-{ return PS_RNDUP(obj_sz + sizeof(struct ps_mheader), sizeof(long)); }
+{ return PS_RNDUP(obj_sz + sizeof(struct ps_mheader), CACHE_LINE); }
 static inline unsigned long
 __ps_slab_max_nobjs(size_t obj_sz, size_t allocsz, size_t headoff)
 { return (allocsz - headoff) / __ps_slab_objmemsz(obj_sz); }

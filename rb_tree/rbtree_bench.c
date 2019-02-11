@@ -233,10 +233,12 @@ main(int argc, char *argv[])
 	load_trace(N_OPS, updater, ops);
 	cb_tree_init(root, obj_num, krange);
 	if (!id_node) {
-		usleep(100000);
+		clwb_range(mem, TEST_FILE_SIZE);
+		sleep(10);
 		bi_set_barrier(2);
 	} else {
 		bi_wait_barrier(2);
+		clflush_range(mem, TEST_FILE_SIZE);
 	}
 	printf("++++++++++++ tree %p init done ++++++++++++++\n", &root->root);
 	__init_thd_data(id_node, 0, num_core, krange, root);

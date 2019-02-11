@@ -22,7 +22,7 @@
 
 /******** MEM MGR ************/
 #define MEM_MGR_OBJ_SZ  (128*PAGE_SIZE)
-#define MEM_MGR_OBJ_NUM (16)
+#define MEM_MGR_OBJ_NUM (320)
 
 /******** PARSEC ************/
 //#define ENABLE_WLOG
