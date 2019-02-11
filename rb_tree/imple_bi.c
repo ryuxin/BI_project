@@ -141,6 +141,7 @@ cb_find(struct cb_root *tree, uintptr_t needle)
 
 	bi_enter();
 	ret = TreeBB_Find(tree, needle);
+	if (ret) assert(V(ret) == (void *)needle);
 	bi_exit();
 	return ret;
 }

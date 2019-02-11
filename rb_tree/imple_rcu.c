@@ -82,6 +82,7 @@ cb_find(struct cb_root *tree, uintptr_t needle)
 
 	rcu_read_lock();
 	ret = TreeBB_Find(tree, needle);
+	if (ret) assert(V(ret) == (void *)needle);
 	rcu_read_unlock();
 	return ret;
 }

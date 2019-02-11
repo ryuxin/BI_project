@@ -131,7 +131,6 @@ bench(struct thread_data *mythd)
 	int n_read = 0, n_update = 0;
 	long i, jump, id, nobj, del = 0, del_id = 0;
 	struct cb_root *root;
-	struct cb_kv *ret;
 	void *dr;
 	uint64_t s, e, s1, e1, cost_r = 0, cost_w = 0, cost;
 
@@ -158,12 +157,11 @@ bench(struct thread_data *mythd)
 			if (dr) assert(dr == (void *)del_id);
 			del_id  = id;
 		} else {
-			ret     = cb_find(root, (k_t)id);
+			cb_find(root, (k_t)id);
 			e1      = bi_local_rdtsc();
 			cost    = e1-s1;
 			cost_r += cost;
 			n_read++;
-			if (ret) assert(V(ret) == (void *)id);
 		}
 		id = (id+MULTIPLIER) % nobj;
 		assert(e1 > s1);
