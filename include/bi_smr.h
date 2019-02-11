@@ -57,4 +57,6 @@ void bi_smr_free(void *buf);
 void bi_enter(void);
 void bi_exit(void);
 
+void chklog(void *v);
+
 #endif	/* PS_SMR_H */

@@ -3,6 +3,33 @@
 #include <string.h>
 #include "bi_smr.h"
 
+#define LOG_N 20000000
+int dbgf = 0;
+static void **logm = NULL;
+static void
+logwf(void *v)
+{
+	if (!logm) logm = malloc(sizeof(void *) * LOG_N);
+	if (dbgf >= LOG_N) return ;
+	logm[dbgf++] = v;
+}
+
+void
+chklog(void *v)
+{
+	int i;
+	printf("dbg tot log %d\n", dbgf);
+	for(i=0; i<dbgf; i++) {
+		if (logm[i] == v) printf("dbg e flush %p v %p\n", logm[i], v);
+	}
+}
+
+static inline int
+qsc_ring_len(struct bi_qsc_ring *ql)
+{
+	return (ql->tail + MAX_QUI_RING_LEN - ql->head) % MAX_QUI_RING_LEN;
+}
+
 static inline struct quies_item *
 qsc_ring_peek(struct bi_qsc_ring *ql)
 {
@@ -68,7 +95,6 @@ static inline int
 __ps_in_lib(struct parsec *ps)
 { return ps->time_out <= ps->time_in; }
 
-/*********************** TODO add wirter log to flush change flush from 1 not 0 (line 81) ***************/
 static int
 bi_smr_flush_quiesce_queue(void)
 {
@@ -82,6 +108,7 @@ bi_smr_flush_quiesce_queue(void)
 		qsc_cpu = (curr + i) % tot_cpu;
 		assert(qsc_cpu != curr);
 		ql = get_quies_ring(qsc_cpu);
+		assert(ql);
 		clflush_range_opt(ql, sizeof(struct bi_qsc_ring));
 	}
 	bi_mb();

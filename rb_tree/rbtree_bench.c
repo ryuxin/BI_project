@@ -91,6 +91,20 @@ test_parse_args(int argc, char **argv)
 		exit(-1);
 	}
 }
+
+int
+TreeBB_debug(node_t *node)
+{
+	int l, r;
+
+	if (!node) return 0;
+	if (V(&node->kv) != (void *)node->kv.key) {
+		printf("dbg fail node %p k %p v %p\n", node, (void *)node->kv.key, V(&node->kv));
+		assert(0);
+	}
+	l = TreeBB_debug(GET(node->left));
+	r = TreeBB_debug(GET(node->right));
+	return l+r+1;
 }
 
 void
@@ -183,7 +197,7 @@ reader_thd_fn(void *arg)
 void
 spawn_reader(pthread_t *thd, int nd, int cd)
 {
-	int ret;
+	int ret = 1;
 
 	ret = pthread_create(thd, 0, reader_thd_fn, &tds[cd]);
 	if (ret) {
@@ -201,6 +215,7 @@ main(int argc, char *argv[])
 	struct Mem_layout *layout;
 	pthread_t pthds[NUM_CORE_PER_NODE];
 
+	// sizeof(node_t) = 40
 	test_parse_args(argc, argv);
 	if (!id_node) {
 		mem = bi_global_init_master(id_node, num_node, num_core,
@@ -226,6 +241,7 @@ main(int argc, char *argv[])
 	} else {
 		bi_wait_barrier(2);
 	}
+	printf("++++++++++++ tree %p init done ++++++++++++++\n", &root->root);
 	__init_thd_data(id_node, 0, num_core, krange, root);
 	spawn_writer(&pthds[0], id_node, 0);
 	for(i=1; i<num_core; i++) {
@@ -241,6 +257,7 @@ main(int argc, char *argv[])
 		print_re(&tds[i]);
 	}
 	printf("node %d ncore %d obj num %d thput %d\n", num_node, num_core, obj_num, tot_thput);
-	sleep(10);
+//	printf("dbg tree size %d\n", TreeBB_debug(root->root));
+	sleep(120);
 	return 0;
 }

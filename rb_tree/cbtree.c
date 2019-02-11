@@ -7,10 +7,20 @@
 #include <limits.h>
 #include "cbtree.h"
 
+static void __attribute__((__used__))
+show(node_t *node, int depth)
+{
+	if (!node) return;
+	show(GET(node->left), depth + 1);
+	printf("%*s%p -> %p\n", depth*2, "", (void*)node->kv.key, node->kv.value);
+	show(GET(node->right), depth + 1);
+}
+
 static inline node_t *
 mkNode(node_t *left, node_t *right, kv_t *kv)
 {
 	node_t *node = TreeBBNewNode();
+	assert(node);
 	SET(node->left, left);
 	SET(node->right, right);
 	SET(node->size, 1 + nodeSize(left) + nodeSize(right));

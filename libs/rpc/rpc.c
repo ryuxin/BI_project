@@ -8,6 +8,17 @@ static struct local_pos snt_pos, rcv_pos;
 static int svr_node, svr_core;
 
 static inline void
+dump_msg_queue(struct msg_queue *q)
+{
+	int i;
+	struct msg_node *mn;
+	for(i=0; i<MSG_NUM; i++) {
+		mn = &(q->ring[i]);
+		printf("dbg dump %p i %d use %d size %lu\n", q, i, mn->meta.use, mn->meta.size);
+	}
+}
+
+static inline void
 __advance_recv_id(void)
 {
 	svr_core++;
