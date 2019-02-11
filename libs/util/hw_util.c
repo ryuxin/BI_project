@@ -74,7 +74,7 @@ load_trace(long nops, unsigned int percent_update, char *ops)
 	long i, n_read, n_update;
 	char trace_name[TRACE_NAME_LEN];
 
-	sprintf(trace_name, "/tmp/%u_update.dat", percent_update);
+	sprintf(trace_name, "/root/Desktop/yuxin/trace/%u_update.dat", percent_update);
 	ret = mlock(ops, nops);
 	if (ret) {
 		printf("Cannot lock memory (%d). Check privilege (i.e. use sudo). Exit.\n", ret);
