@@ -37,8 +37,8 @@ struct bi_qsc_ring {
 static inline void
 parsec_struct_init(struct parsec *p)
 {
-	p->time_in = 1;
-	p->time_out = 0;
+	p->time_in = 0;
+	p->time_out = 1;
 }
 
 static inline void
