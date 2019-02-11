@@ -62,6 +62,7 @@ struct Mem_layout {
 	struct Per_node_info mem_start_addr;
 	struct Global_rdtsc time;
 	struct Global_barrier g_bar;
+	struct Global_barrier bars[NUM_NODES];
 	struct mcslock_context mcs_cntxt[NUM_NODES][NUM_CORE_PER_NODE];
 	ck_spinlock_mcs_t mcs_lock[MAX_TEST_OBJ_NUM];
 } __attribute__((aligned(CACHE_LINE), packed));

@@ -195,6 +195,9 @@ init_global_memory(void *global_memory, char *s)
 	addr = __init_mem_start_addr(&global_layout->mem_start_addr, addr);
 
 	global_layout->g_bar.barrier = 0;
+	for(i=0; i<NUM_NODES; i++) {
+		global_layout->bars[i].barrier = 0;
+	}
 
 	printf("magic string %s\n", global_layout->magic);
 	printf("start %p end %p tot sz %lu\n", global_memory, addr, (unsigned long)(addr - global_memory));

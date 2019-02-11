@@ -107,8 +107,26 @@ bi_server_run(bi_update_fn_t update_fn, bi_flush_fn_t flush_fn)
 {
 	uint64_t flush_prev, tsc_prev, curr;
 	size_t s;
-	int nd, cd;
+	int nd, cd, ntot, r;
 
+	ntot = get_active_node_num();
+	if (NODE_ID() == 0) {
+		for(nd=1; nd<ntot; nd++) {
+		        do {
+        		        clflush_range(&global_layout->bars[nd], CACHE_LINE);
+                		r =  global_layout->bars[nd].barrier;
+		        } while(!r);
+		}
+		global_layout->bars[0].barrier = 1;
+	        clwb_range(&global_layout->bars[0], CACHE_LINE);
+	} else {
+		global_layout->bars[NODE_ID()].barrier = 1;
+	        clwb_range(&global_layout->bars[NODE_ID()], CACHE_LINE);
+	        do {
+        	        clflush_range(&global_layout->bars[0], CACHE_LINE);
+                	r =  global_layout->bars[0].barrier;
+	        } while(!r);
+	}
 	flush_prev = bi_local_rdtsc();
 	tsc_prev   = bi_local_rdtsc();
 	while (running_cores) {
