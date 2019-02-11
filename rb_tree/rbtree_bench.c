@@ -16,7 +16,7 @@
 
 struct ps_slab_info *slab_allocator;
 struct thread_data tds[NUM_CORE_PER_NODE];
-static int num_node, num_core, id_node, obj_num, krange;
+static int num_node, num_core, id_node, obj_num, krange, updater = 50;
 static char ops[N_OPS];
 static int tot_thput = 0;
 
@@ -29,6 +29,7 @@ usage(void)
 	"  -n N            number of partitions\n"
 	"  -c N            number of core in each partition\n"
 	"  -m N            number of tree nodes\n"
+	"  -u N            update ratio 0 - 100\n"
 	"  -r N            range of random key\n"
 	"  -h              help\n"
 	"\n");
@@ -43,7 +44,7 @@ test_parse_args(int argc, char **argv)
 		usage();
 		exit(-1);
 	}
-	while ((opt=getopt(argc, argv, "i:n:c:m:r:h:")) != EOF) {
+	while ((opt=getopt(argc, argv, "i:n:c:m:u:r:h:")) != EOF) {
 		switch (opt) {
 		case 'i':
 			id_node  = atoi(optarg);
@@ -57,6 +58,9 @@ test_parse_args(int argc, char **argv)
 		case 'm':
 			obj_num  = atoi(optarg);
 			break;
+		case 'u':
+			updater = atoi(optarg);
+			break;
 		case 'r':
 			krange   = (size_t)atoi(optarg);
 			break;
@@ -65,6 +69,7 @@ test_parse_args(int argc, char **argv)
 			exit(0);
 		}
 	}
+	krange = 2 * obj_num;
 	if (num_node > NUM_NODES) {
 		printf("error: number of partition %d is larger than max %d\n", num_node, NUM_NODES);
 		exit(-1);
@@ -81,6 +86,11 @@ test_parse_args(int argc, char **argv)
 		printf("error: tree sz %d is out of range %d\n", obj_num, krange);
 		exit(-1);
 	}
+	if (updater < 0 || updater > 100) {
+		printf("error: update ratio %d is out of range 0 - 100\n", updater);
+		exit(-1);
+	}
+}
 }
 
 void
@@ -208,7 +218,7 @@ main(int argc, char *argv[])
 	root           = get_rb_root(0);
 	printf("magic: %s\n", layout->magic);
 	srand(time(NULL));
-	load_trace(N_OPS, 50, ops);
+	load_trace(N_OPS, updater, ops);
 	cb_tree_init(root, obj_num, krange);
 	if (!id_node) {
 		usleep(100000);
