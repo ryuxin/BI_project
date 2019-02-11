@@ -214,7 +214,7 @@ bi_smr_reclaim(void)
 	a    = qsc_ring_peek(ql);
 	if (!a) return i;
 	qsc  = bi_quiesce();
-	qsc -= QUISE_FLUSH_PERIOD;
+	qsc -= FLUSH_GRACE_PERIOD;
 
 	while (1) {
 		a = qsc_ring_peek(ql);
@@ -242,7 +242,7 @@ bi_wlog_reclaim(void)
         a    = qsc_ring_peek(ql);
 	if (!a) return i;
 	qsc  = bi_global_rtdsc();
-        qsc -= QUISE_FLUSH_PERIOD;
+	qsc -= FLUSH_GRACE_PERIOD;
 	while (1) {
 		a = qsc_ring_peek(ql);
 		if (!a || a->tsc_free > qsc) break;

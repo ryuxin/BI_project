@@ -26,9 +26,10 @@
 
 /******** PARSEC ************/
 //#define ENABLE_WLOG
-#define MAX_QUI_RING_LEN 1024
+#define MAX_QUI_RING_LEN (1*4096)
 #define GLOBAL_TSC_PERIOD (5000)
-#define QUISE_FLUSH_PERIOD (1000000)
+#define QUISE_FLUSH_PERIOD (2000000)
+#define FLUSH_GRACE_PERIOD (5*QUISE_FLUSH_PERIOD)
 
 /******** TESTS ************/
 #define MAX_TEST_OBJ_NUM (1024)
