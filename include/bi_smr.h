@@ -47,13 +47,20 @@ qsc_ring_struct_init(struct bi_qsc_ring *p)
 	p->head = p->tail = 0;
 }
 
-int bi_smr_flush_wlog(void);
-void bi_smr_wlog(void *buf);
-int bi_wlog_reclaim(void);
-int bi_smr_flush(void);
+void bi_wlog_cache_init(void);
+void bi_qsc_cache_init(void);
+void bi_qsc_cache_alloc(void);
+int bi_qsc_cache_flush(void);
+
 uint64_t bi_quiesce(void);
-int bi_smr_reclaim(void);
 void bi_smr_free(void *buf);
+int bi_smr_reclaim(void);
+int bi_smr_flush(void);
+
+void bi_wlog_free(void *buf, size_t sz);
+int bi_wlog_reclaim(void);
+int bi_wlog_flush(void);
+
 void bi_enter(void);
 void bi_exit(void);
 

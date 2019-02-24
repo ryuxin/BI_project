@@ -4,6 +4,15 @@
 #include "bi_smr.h"
 
 #define LOG_N 20000000
+
+struct qsc_local_cache {
+	void **m;
+	size_t *sz;
+	int cnt;
+};
+
+static struct qsc_local_cache smr_cache, wlog_cache;
+
 int dbgf = 0;
 static void **logm = NULL;
 static void
@@ -49,29 +58,65 @@ qsc_ring_dequeue(struct bi_qsc_ring *ql)
 }
 
 static inline int
-qsc_ring_enqueue(struct bi_qsc_ring *ql, void *m, size_t sz)
+qsc_ring_enqueue_batch(struct bi_qsc_ring *ql, void **m, size_t *sz, int batch)
 {
+	int i, j;
 	struct quies_item *qi;
 
-	if (ql->head == (ql->tail + 1) % MAX_QUI_RING_LEN) {
-		printf("quisence ring full %d\n", MAX_QUI_RING_LEN);
-		assert(0);
-		return -1;
+	for(j = ql->tail, i=0; i<batch; i++) {
+		if (ql->head == (j + 1) % MAX_QUI_RING_LEN) {
+			printf("quisence ring full %d\n", MAX_QUI_RING_LEN);
+			assert(0);
+			return -1;
+		}
+
+	        qi           = &(ql->ring[j]);
+        	qi->mh       = m[i];
+	        qi->sz       = sz[i];
+        	qi->tsc_free = bi_global_rtdsc();
+	        clwb_range_opt(qi, CACHE_LINE);
+		j = (j + 1) % MAX_QUI_RING_LEN;
 	}
-	qi           = &(ql->ring[ql->tail]);
-	qi->mh       = m;
-	qi->sz       = sz;
-	qi->tsc_free = bi_global_rtdsc();
-	clwb_range(qi, CACHE_LINE);
-	ql->tail     = (ql->tail+1) % MAX_QUI_RING_LEN;
-	clwb_range(ql, CACHE_LINE);
+	bi_wmb();
+	ql->tail = j;
+	clwb_range_opt(ql, CACHE_LINE);
 	return 0;
 }
 
-static inline int
-qsc_enqueue(struct bi_qsc_ring *ql, struct ps_mheader *m)
+static inline void
+qsc_local_cache_init(struct qsc_local_cache *lc)
 {
-	return qsc_ring_enqueue(ql, m, bi_slab_objmem(m->slab->si));
+        lc->cnt = 0;
+}
+
+static inline void
+qsc_local_cache_alloc(struct qsc_local_cache *lc)
+{
+        lc->m  = malloc(sizeof(void *) * LOCAL_CACHE_QUEUE_SZ);
+        lc->sz = malloc(sizeof(size_t) * LOCAL_CACHE_QUEUE_SZ);
+        qsc_local_cache_init(lc);
+}
+
+static inline void
+qsc_local_cache_put(struct qsc_local_cache *lc, void *buf, size_t s)
+{
+	int c;
+
+	c = lc->cnt;
+	assert(c < LOCAL_CACHE_QUEUE_SZ);
+	lc->m[c]  = buf;
+	lc->sz[c] = s;
+	lc->cnt   = c+1;
+}
+
+static inline int
+qsc_local_cache_flush(struct bi_qsc_ring *ql, struct qsc_local_cache *lc)
+{
+	int r;
+	r = lc->cnt;
+	qsc_ring_enqueue_batch(ql, lc->m, lc->sz, lc->cnt);
+	qsc_local_cache_init(lc);
+	return r;
 }
 
 static inline void
@@ -95,71 +140,51 @@ static inline int
 __ps_in_lib(struct parsec *ps)
 { return ps->time_out <= ps->time_in; }
 
-static int
-bi_smr_flush_quiesce_queue(void)
+void
+bi_wlog_cache_init(void)
 {
-	int i, r, qsc_cpu, tot_cpu, curr;
-	struct bi_qsc_ring *ql;
-
-	curr    = NODE_ID();
-	tot_cpu = get_active_node_num();
-	for (i = 1 ; i < tot_cpu; i++) {
-		/* Make sure we don't all hammer core 0... */
-		qsc_cpu = (curr + i) % tot_cpu;
-		assert(qsc_cpu != curr);
-		ql = get_quies_ring(qsc_cpu);
-		assert(ql);
-		clflush_range_opt(ql, sizeof(struct bi_qsc_ring));
-	}
-	bi_mb();
-
-	for (r=0, i = 0; i < tot_cpu; i++) {
-		qsc_cpu = (curr + i) % tot_cpu;
-		ql = get_quies_ring(qsc_cpu);
-		r += (MAX_QUI_RING_LEN + ql->tail - ql->head) % MAX_QUI_RING_LEN;
-		qsc_ring_flush(ql);
-	}
-	bi_mb();
-	return r;
+        qsc_local_cache_init(&wlog_cache);
 }
 
-int
-bi_smr_flush_wlog(void)
+/*
+ * core API of BI:
+ * A global shared ring buffer is the central to coordinate and achieve quiescence.
+ * Only writer add and remove memory objects from the ring buffer via *_free and 
+ * *_reclaim API. The reclamation likely needs another *_quiesce API to detect 
+ * if an objects can be safely removed (based on time and quiescence calculation).
+ * So time-stamp is recorded when object is added to the ring buffer.
+ * Readers use *_flush API to do cache flush of all objects in the ring buffer.
+ * This process first flush the ring buffer itself in order to see up-to-date 
+ * entries, then flush each object stored in the entry.
+ * To avoid frequent access to the global ring buffer (its associated write back 
+ * and memory barriers), the writer has a local cache which save objects temporarily 
+ * and add them to the global ring buffer later in a batched manner.
+ * The same set of API is used for ring buffer of both freed memory and modification log.
+ */
+void
+bi_qsc_cache_init(void)
 {
-        int i, r, qsc_cpu, tot_cpu, curr;
-        struct bi_qsc_ring *ql;
+	qsc_local_cache_init(&smr_cache);
+        qsc_local_cache_init(&wlog_cache);
+}
 
-#ifndef ENABLE_WLOG
-	printf("Warning writer log is not enabled\n");
-	return -1;
+void
+bi_qsc_cache_alloc(void)
+{
+	qsc_local_cache_alloc(&smr_cache);
+#ifdef ENABLE_WLOG
+        qsc_local_cache_alloc(&wlog_cache);
 #endif
-
-	curr    = NODE_ID();
-        tot_cpu = get_active_node_num();
-        for (i = 1 ; i < tot_cpu; i++) {
-		/* Make sure we don't all hammer core 0... */
-		qsc_cpu = (curr + i) % tot_cpu;
-                assert(qsc_cpu != curr);
-                ql = get_wlog_ring(qsc_cpu);
-                clflush_range_opt(ql, sizeof(struct bi_qsc_ring));
-        }
-	bi_mb();
-
-	for (r=0, i = 1; i < tot_cpu; i++) {
-		qsc_cpu = (curr + i) % tot_cpu;
-                ql = get_wlog_ring(qsc_cpu);
-                r += (MAX_QUI_RING_LEN + ql->tail - ql->head) % MAX_QUI_RING_LEN;
-                qsc_ring_flush(ql);
-	}
-        bi_mb();
-	return r;
 }
 
 int
-bi_smr_flush(void)
+bi_qsc_cache_flush(void)
 {
 	int r;
-	r = bi_smr_flush_quiesce_queue();
+	r = qsc_local_cache_flush(get_quies_ring(NODE_ID()), &smr_cache);
+#ifdef ENABLE_WLOG
+	r += qsc_local_cache_flush(get_wlog_ring(NODE_ID()), &wlog_cache);
+#endif
 	return r;
 }
 
@@ -201,6 +226,19 @@ bi_quiesce(void)
 	return min_known_qsc;
 }
 
+void
+bi_smr_free(void *buf)
+{
+        struct ps_mheader *m;
+	size_t sz;
+
+        assert(buf);
+        m  = __ps_mhead_get(buf);
+	sz = bi_slab_objmem(m->slab->si); 
+//	qsc_ring_enqueue_batch(get_quies_ring(NODE_ID()), &m, &sz, 1);
+        qsc_local_cache_put(&smr_cache, m, sz);
+}
+
 int
 bi_smr_reclaim(void)
 {
@@ -230,6 +268,47 @@ bi_smr_reclaim(void)
 }
 
 int
+bi_smr_flush(void)
+{
+        int i, r, qsc_cpu, tot_cpu, curr;
+        struct bi_qsc_ring *ql;
+
+        curr    = NODE_ID();
+        tot_cpu = get_active_node_num();
+        for (i = 1 ; i < tot_cpu; i++) {
+                /* Make sure we don't all hammer core 0... */
+                qsc_cpu = (curr + i) % tot_cpu;
+                assert(qsc_cpu != curr);
+                ql = get_quies_ring(qsc_cpu);
+                assert(ql);
+                clflush_range_opt(ql, sizeof(struct bi_qsc_ring));
+        }
+        bi_mb();
+
+        for (r=0, i = 0; i < tot_cpu; i++) {
+                qsc_cpu = (curr + i) % tot_cpu;
+                ql = get_quies_ring(qsc_cpu);
+                r += (MAX_QUI_RING_LEN + ql->tail - ql->head) % MAX_QUI_RING_LEN;
+                qsc_ring_flush(ql);
+        }
+        bi_mb();
+        return r;
+}
+
+void
+bi_wlog_free(void *buf, size_t sz)
+{
+#ifdef ENABLE_WLOG
+        assert(buf);
+//	qsc_ring_enqueue_batch(get_wlog_ring(NODE_ID()), &buf, &sz, 1);
+        qsc_local_cache_put(&wlog_cache, buf, sz);
+#else
+        (void)buf;
+        bi_mb();
+#endif
+}
+
+int
 bi_wlog_reclaim(void)
 {
 	struct bi_qsc_ring *ql;
@@ -253,26 +332,36 @@ bi_wlog_reclaim(void)
 	return i;
 }
 
-void
-bi_smr_wlog(void *buf)
+int
+bi_wlog_flush(void)
 {
-#ifdef ENABLE_WLOG
-        assert(buf);
-        qsc_ring_enqueue(get_wlog_ring(NODE_ID()), buf, CACHE_LINE);
-#else
-	(void)buf;
-	bi_mb();
+        int i, r, qsc_cpu, tot_cpu, curr;
+        struct bi_qsc_ring *ql;
+
+#ifndef ENABLE_WLOG
+        printf("Warning writer log is not enabled\n");
+        return -1;
 #endif
-}
 
-void
-bi_smr_free(void *buf)
-{
-	struct ps_mheader *m;
+        curr    = NODE_ID();
+        tot_cpu = get_active_node_num();
+        for (i = 1 ; i < tot_cpu; i++) {
+                /* Make sure we don't all hammer core 0... */
+                qsc_cpu = (curr + i) % tot_cpu;
+                assert(qsc_cpu != curr);
+                ql = get_wlog_ring(qsc_cpu);
+                clflush_range_opt(ql, sizeof(struct bi_qsc_ring));
+        }
+        bi_mb();
 
-	assert(buf);
-	m   = __ps_mhead_get(buf);
-	qsc_enqueue(get_quies_ring(NODE_ID()), m);
+        for (r=0, i = 1; i < tot_cpu; i++) {
+                qsc_cpu = (curr + i) % tot_cpu;
+                ql = get_wlog_ring(qsc_cpu);
+                r += (MAX_QUI_RING_LEN + ql->tail - ql->head) % MAX_QUI_RING_LEN;
+                qsc_ring_flush(ql);
+        }
+        bi_mb();
+        return r;
 }
 
 void
@@ -305,5 +394,6 @@ bi_exit(void)
 	 */
 	bi_ccb();
 	ps->time_out = ps->time_in + 1;
-	clwb_range(ps, sizeof(struct parsec));
+	clwb_range_opt(ps, sizeof(struct parsec));
+}
 }

@@ -26,7 +26,7 @@ TreeBBNewNode(void)
 	node_t *r;
 	r = bi_slab_alloc(slab_allocator);
 #ifdef ENABLE_WLOG
-	bi_smr_wlog(r);
+	bi_wlog_free(r, slab_allocator->obj_sz);
 #endif
 	return r;
 }
@@ -90,7 +90,7 @@ app_flush_tree(void)
 static void
 app_flush_wlog(void)
 {
-	bi_smr_flush_wlog();
+	bi_wlog_flush();
 	bi_wlog_reclaim();
 }
 
@@ -109,6 +109,7 @@ rbtree_msg_handler(void *msg, size_t sz, int nid, int cid)
 	else msg_reply.value = cb_erase_svr(req->tree, req->key);
 	r = rpc_send_server(nid, cid, &msg_reply, sz);
 	free_nodes();
+	bi_qsc_cache_flush();
 	assert(r == 0);
 }
 
@@ -189,6 +190,7 @@ cb_tree_init(struct cb_root *tree, int tree_sz, int range)
 	for(j=0, i=0; i<tree_sz; i++) {
 		cb_insert_svr(tree, (k_t)j, (void *)j);
 		free_nodes_seq();
+		bi_wlog_cache_init();
 		qsc_ring_struct_init((struct bi_qsc_ring *)get_wlog_ring(NODE_ID()));
 		j = (j + r) % range;
 	}
