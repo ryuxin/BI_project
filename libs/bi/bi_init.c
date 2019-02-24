@@ -139,8 +139,9 @@ bi_server_run(bi_update_fn_t update_fn, bi_flush_fn_t flush_fn)
 			bi_smr_reclaim();
 			flush_prev = curr;
 		}
-		if (NODE_ID() == 0 && curr - tsc_prev > GLOBAL_TSC_PERIOD) {
-			bi_global_rtdsc();
+		if (curr - tsc_prev > GLOBAL_TSC_PERIOD) {
+			if (NODE_ID() == 0) bi_global_rtdsc();
+	                else clflush_range(&global_layout->time, CACHE_LINE);
 			tsc_prev = curr;
 		}
 		s = rpc_recv_server(recv_buf, &nd, &cd);
