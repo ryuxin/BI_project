@@ -15,23 +15,6 @@ static struct qsc_local_cache smr_cache, wlog_cache;
 
 int dbgf = 0;
 static void **logm = NULL;
-static void
-logwf(void *v)
-{
-	if (!logm) logm = malloc(sizeof(void *) * LOG_N);
-	if (dbgf >= LOG_N) return ;
-	logm[dbgf++] = v;
-}
-
-void
-chklog(void *v)
-{
-	int i;
-	printf("dbg tot log %d\n", dbgf);
-	for(i=0; i<dbgf; i++) {
-		if (logm[i] == v) printf("dbg e flush %p v %p\n", logm[i], v);
-	}
-}
 
 static inline int
 qsc_ring_len(struct bi_qsc_ring *ql)
@@ -396,4 +379,21 @@ bi_exit(void)
 	ps->time_out = ps->time_in + 1;
 	clwb_range_opt(ps, sizeof(struct parsec));
 }
+
+static void
+logwf(void *v)
+{
+	if (!logm) logm = malloc(sizeof(void *) * LOG_N);
+	if (dbgf >= LOG_N) return ;
+	logm[dbgf++] = v;
+}
+
+void
+chklog(void *v)
+{
+	int i;
+	printf("dbg tot log %d\n", dbgf);
+	for(i=0; i<dbgf; i++) {
+		if (logm[i] == v) printf("dbg e flush %p v %p\n", logm[i], v);
+	}
 }

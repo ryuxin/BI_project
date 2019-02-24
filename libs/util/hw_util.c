@@ -25,6 +25,27 @@ const int core_map[NUM_SOCKETS][NUM_CORE_PER_SOCKET] = {
 			{56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83},
 			{84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111}};
 
+uint64_t dbg_tot = 0, dbg_a, dbg_b, dbg_A, dbg_B;
+int dbg_r = 0, dbgc = 0;
+void
+start_time(void)
+{
+	if (!dbgc) dbg_A = bi_local_rdtsc();
+	dbgc++;
+	dbg_a = bi_local_rdtsc();
+}
+
+void
+end_time(int n)
+{
+	dbg_b = bi_local_rdtsc();
+	dbg_tot += (dbg_b - dbg_a);
+	if (dbgc == n) {
+		dbg_B = bi_local_rdtsc();
+		printf("dbg difft %lu cnt %d avg %lu difn %d\n", dbg_B-dbg_A - dbg_tot, n, dbg_tot/dbgc, dbg_r-dbgc);
+	}
+}
+
 int
 convert_to_core_id(int nid, int cid)
 {
