@@ -127,6 +127,7 @@ __ps_slab_mem_free(void *buf, size_t allocsz, size_t headoff)
 	next        = s->freelist;
 	s->freelist = h; 	/* TODO: should be atomic/locked */
 	h->next     = next;
+//	__ps_mhead_setfree(h);
 	s->nfree++;		/* TODO: ditto */
 	if (s->nfree == max_nobjs) {
 		/* remove from the freelist */
@@ -169,7 +170,6 @@ __ps_slab_mem_alloc(struct ps_slab_info *si, size_t allocsz, size_t headoff)
 	/* TODO: atomic modification to the freelist */
 	h           = s->freelist;
 	s->freelist = h->next;
-	h->next     = NULL;
 	s->nfree--;
 	__ps_mhead_reset(h);
 

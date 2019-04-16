@@ -34,6 +34,7 @@ typedef enum {
 
 /* Memory header */
 struct ps_mheader {
+	ps_tsc_t type;
 	struct ps_slab    *slab;   /* slab header ptr */
 	struct ps_mheader *next;   /* slab freelist ptr */
 } __attribute__((packed));
@@ -55,16 +56,35 @@ static inline void *
 __ps_mhead_mem(struct ps_mheader *h)
 { return &h[1]; }
 
+static inline int
+__ps_mhead_isfree(struct ps_mheader *h)
+{
+	return (h->type == SLAB_FREE);
+	return (h->type != SLAB_IN_USE);
+}
+
+static inline void
+__ps_mhead_setfree(struct ps_mheader *h)
+{
+	h->type = SLAB_FREE;
+	//h->type = bi_global_rtdsc();
+	bi_wb_cache(h);
+}
+
 static inline void
 __ps_mhead_reset(struct ps_mheader *h)
 {
-	h->next     = NULL;
+	h->next = NULL;
+	//h->type = SLAB_IN_USE;
+	h->type = bi_global_rtdsc();
+	bi_wb_cache(h);
 }
 
 static inline void
 __ps_mhead_init(struct ps_mheader *h, struct ps_slab *s)
 {
-	h->slab     = s;
+	h->slab = s;
+	h->type = SLAB_IN_USE;
 }
 
 /*********** some slab internals **/

@@ -219,6 +219,7 @@ bi_smr_free(void *buf)
         assert(buf);
         m  = __ps_mhead_get(buf);
 	sz = bi_slab_objmem(m->slab->si); 
+	__ps_mhead_setfree(m);
 //	qsc_ring_enqueue_batch(get_quies_ring(NODE_ID()), &m, &sz, 1);
         qsc_local_cache_put(&smr_cache, m, sz);
 }
