@@ -4,6 +4,11 @@
 #include "mem_mgr.h"
 #include "rpc.h"
 
+typedef enum {
+	NOFLUSH,
+	FLUSH,
+} flush_op_t;
+
 static struct local_pos snt_pos, rcv_pos;
 static int svr_node, svr_core;
 
@@ -19,12 +24,35 @@ dump_msg_queue(struct msg_queue *q)
 }
 
 static inline void
+__server_flush_msgq(int nn, int nc)
+{
+//return ;
+	int i, j;
+        struct msg_queue *mq;
+
+	for(i=0; i<nn; i++) {
+		for(j=0; j<nc; j++) {
+			mq  = (struct msg_queue *)get_recv_ring_server(i, j);
+			clflush_range_opt(mq, sizeof(struct msg_queue));
+		}
+	}
+	bi_wmb();
+}
+
+static inline void
 __advance_recv_id(void)
 {
+	int nn, nc;
+
+	nn = get_active_node_num();
+	nc = get_active_core_num();
+	if (svr_node == 0 && svr_core == 0) {
+		__server_flush_msgq(nn, nc);
+	}
 	svr_core++;
-	if (svr_core % get_active_core_num() == 0) {
+	if (svr_core % nc == 0) {
 		svr_core = 0;
-		svr_node = (svr_node+1) % get_active_node_num();
+		svr_node = (svr_node+1) % nn;
 	}
 }
 
@@ -35,9 +63,9 @@ rpc_send_ext(struct msg_queue *q, int *pos, void *data, size_t size)
 	int cur = (*pos) % MSG_NUM;
 
 	mn = &(q->ring[cur]);
-	clflush_range(&mn->meta, CACHE_LINE);
-	bi_inst_bar();
-	if (unlikely(mn->meta.use)) return -1;
+//	clflush_range(&mn->meta, CACHE_LINE);
+//	bi_inst_bar();
+//	if (unlikely(mn->meta.use)) return -1;
 	memcpy(mn->data, data, size);
 	clwb_range(mn->data, size);
 	mn->meta.size = size;
@@ -48,7 +76,7 @@ rpc_send_ext(struct msg_queue *q, int *pos, void *data, size_t size)
 }
 
 static inline size_t
-rpc_recv_ext(struct msg_queue *q, int *pos, void *data, int spin)
+rpc_recv_ext(struct msg_queue *q, int *pos, void *data, int spin, flush_op_t nd_flush)
 {
 	struct msg_node *mn;
 	size_t ret_sz = 0;
@@ -56,13 +84,17 @@ rpc_recv_ext(struct msg_queue *q, int *pos, void *data, int spin)
 
 	do {
 		mn = &(q->ring[cur]);
-		clflush_range(&mn->meta, CACHE_LINE);
-		bi_inst_bar();
+		if (nd_flush == FLUSH) {
+			clflush_range_opt(&mn->meta, CACHE_LINE);
+			bi_inst_bar();
+		}
 		if (!mn->meta.use) continue;
 		bi_ccb();
 		ret_sz = mn->meta.size;
-		clflush_range(mn->data, ret_sz);
-		bi_inst_bar();
+		if (nd_flush == FLUSH) {
+			clflush_range(mn->data, ret_sz);
+			bi_inst_bar();
+		}
 		memcpy(data, mn->data, ret_sz);
 //		bi_dereference_area_aggressive(data, mn->data, ret_sz);
 		mn->meta.size = 0;
@@ -100,7 +132,7 @@ rpc_recv(int node, void *data, int spin)
 	mq  = (struct msg_queue *)get_recv_ring(node);
 	pos = &(rcv_pos.tail[node][CORE_ID()]);
 
-	return rpc_recv_ext(mq, pos, data, spin);
+	return rpc_recv_ext(mq, pos, data, spin, FLUSH);
 }
 
 int
@@ -127,7 +159,7 @@ rpc_recv_server(void *data, int *nid, int *cid)
 	mq  = (struct msg_queue *)get_recv_ring_server(svr_node, svr_core);
 	pos = &(snt_pos.tail[svr_node][svr_core]);
 
-	ret_sz = rpc_recv_ext(mq, pos, data, 0);
+	ret_sz = rpc_recv_ext(mq, pos, data, 0, NOFLUSH);
 	*nid = svr_node;
 	*cid = svr_core;
 	__advance_recv_id();
