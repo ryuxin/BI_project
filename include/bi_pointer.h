@@ -50,42 +50,63 @@ bi_publish_area(void *dst, void *src, size_t sz)
 /*
  * read side interface.
  * dereference ptr which is in global memory.
- * This DOES NOT invalidates ptr before dereference, so get possible stale value.
+ * This LAZILY invalidates ptr before dereference, so possible get stale and updated value.
  * There is NO read log to record ptr and *ptr. 
  */
-#define bi_dereference_pointer_lazy(ptr)                                     \
-				__extension__				     \
-				({					     \
-				__typeof__(ptr) __p = BI_ACCESS_ONCE((ptr)); \
-				(__p);				             \
-				})
+#if 0 
+#define bi_dereference_pointer_lazy(ptr)                \
+	__extension__				         \
+	({					         \
+	__typeof__(ptr) __p = BI_ACCESS_ONCE((ptr));     \
+	(__p);				                 \
+	})
+#else
+#define bi_dereference_pointer_lazy(ptr)                \
+	__extension__				         \
+	({					         \
+	__typeof__(ptr) __p = BI_ACCESS_ONCE((ptr));     \
+	struct ps_mheader *__m  = __ps_mhead_get(__p);   \
+	/* lazy invalidation */                          \
+	if (__p && __ps_mhead_isfree(__m)) {            \
+		bi_flush_cache(&(ptr));                  \
+		bi_wmb();                                \
+		__p = BI_ACCESS_ONCE((ptr));             \
+		__m = __ps_mhead_get(__p);              \
+		/* detect stale prefetch */      \
+		if (unlikely(__p && __ps_mhead_isfree(__m))) {  \
+			bi_flush_cache(__m);             \
+			bi_wmb();                        \
+		}                                        \
+	}                                                \
+	(__p);				                 \
+	})
+#endif
 /*
  * read side interface.
  * dereference ptr which is in global memory.
  * This invalidates ptr before dereference, so get up-to-date value.
  * There is NO read log to record ptr and *ptr.
  */
-#define bi_dereference_pointer_aggressive(ptr)                             \
-				__extension__				   \
-				({					   \
-				bi_flush_cache(&(ptr));                    \
-				bi_rmb();                                  \
-				__typeof__(p) __p = BI_ACCESS_ONCE((ptr)); \
-				(__p);				           \
-				})
+#define bi_dereference_pointer_aggressive(ptr)          \
+	__extension__				         \
+	({					         \
+	bi_flush_cache(&(ptr));                          \
+	bi_wmb();                                        \
+	__typeof__(p) __p = BI_ACCESS_ONCE((ptr));       \
+	(__p);				                 \
+	})
 
 /*
  * write side interface.
  * set ptr with v.
  * This writes back ptr to memroy.
  */
-#define bi_publish_pointer(ptr, v)                                  \
-				do {                                \
-					__typeof__(ptr) __pv = (v); \
-					*(&(ptr)) = __pv;           \
-					bi_wb_cache(&(ptr));        \
-					bi_wmb();                   \
-					bi_smr_wlog((&(ptr)));         \
-				} while (0)
+#define bi_publish_pointer(ptr, v)                      \
+	do {                                             \
+	       	__typeof__(ptr) __pv = (v);                \
+		*(&(ptr)) = __pv;                        \
+		bi_wb_cache(&(ptr));                     \
+		bi_wlog_free((&(ptr)), CACHE_LINE);      \
+	} while (0)
 
 #endif /* BI_POINTER_H */
