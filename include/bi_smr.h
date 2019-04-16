@@ -34,6 +34,8 @@ struct bi_qsc_ring {
 	struct quies_item ring[MAX_QUI_RING_LEN];
 } __attribute__((aligned(CACHE_LINE), packed));
 
+extern struct parsec parsec_time_cache[NUM_CORE_PER_NODE];
+
 static inline void
 parsec_struct_init(struct parsec *p)
 {
@@ -63,6 +65,7 @@ int bi_wlog_flush(void);
 
 void bi_enter(void);
 void bi_exit(void);
+void bi_time_flush(void);
 
 void chklog(void *v);
 

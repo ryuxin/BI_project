@@ -101,8 +101,11 @@ bi_local_init_reader(int core_id)
 void
 bi_local_init_server(int core_id, int ncore)
 {
+	int i;
+
 	setup_core_id(core_id);
 	running_cores = ncore - 1;
+	for(i=0; i<NUM_CORE_PER_NODE; i++) parsec_struct_init(&parsec_time_cache[i]);
 }
 
 void
@@ -136,6 +139,7 @@ bi_server_run(bi_update_fn_t update_fn, bi_flush_fn_t flush_fn)
 		curr = bi_local_rdtsc();
 		if (curr - flush_prev > QUISE_FLUSH_PERIOD) {
 			if (flush_fn) flush_fn();
+			bi_time_flush();
 			bi_smr_flush();
 			bi_smr_reclaim();
 			flush_prev = curr;

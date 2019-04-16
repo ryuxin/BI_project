@@ -12,6 +12,7 @@ struct qsc_local_cache {
 };
 
 static struct qsc_local_cache smr_cache, wlog_cache;
+struct parsec parsec_time_cache[NUM_CORE_PER_NODE];
 
 int dbgf = 0;
 static void **logm = NULL;
@@ -347,6 +348,7 @@ bi_wlog_flush(void)
         return r;
 }
 
+#if 0 
 void
 bi_enter(void)
 {
@@ -379,6 +381,46 @@ bi_exit(void)
 	ps->time_out = ps->time_in + 1;
 	clwb_range_opt(ps, sizeof(struct parsec));
 }
+
+void
+bi_time_flush(void)
+{ return ; }
+#else
+void
+bi_enter(void)
+{
+	struct parsec *ps;
+	ps_tsc_t curr_time;
+
+	curr_time    = bi_global_rtdsc();
+	ps           = &parsec_time_cache[CORE_ID()];
+	ps->time_in  = curr_time;
+	ps->time_out = curr_time - 1;
+	bi_wmb();
+}
+
+void
+bi_exit(void)
+{
+	struct parsec *ps;
+
+	ps           = &parsec_time_cache[CORE_ID()];
+	ps->time_out = ps->time_in + 1;
+}
+
+void
+bi_time_flush(void)
+{
+	void *ps;
+	size_t sz;
+
+	ps = get_parsec_time(NODE_ID(), 0);
+	sz = sizeof(parsec_time_cache);
+	memcpy(ps, parsec_time_cache, sz);
+	clwb_range_opt(ps, sz);
+}
+#endif
+
 
 static void
 logwf(void *v)
