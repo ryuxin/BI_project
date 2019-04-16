@@ -185,7 +185,6 @@ TreeBB_Insert(struct cb_root *tree, uintptr_t key, void *value)
 {
 	kv_t kv = {key, value};
 	node_t *nroot = insert(tree->root, &kv);
-	bi_wmb();
 	if (tree->root != nroot) bi_publish_pointer(tree->root, nroot);
 }
 
@@ -241,7 +240,6 @@ TreeBB_Delete(struct cb_root *tree, uintptr_t key)
 {
 	void *deleted;
 	node_t *nroot = delete(tree->root, key, &deleted);
-	bi_wmb();
 	if (tree->root != nroot) bi_publish_pointer(tree->root, nroot);
 	return deleted;
 }
@@ -251,7 +249,11 @@ TreeBB_Find(struct cb_root *tree, uintptr_t needle)
 {
 	node_t *node;
 
+#ifdef RBTREE_BI
+	node = bi_dereference_pointer_lazy(tree->root);
+#else
 	node = tree->root;
+#endif
 	while (node) {
 		if (node->kv.key == needle) break;
 		else if (node->kv.key > needle) node = GET(node->left);

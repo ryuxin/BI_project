@@ -9,9 +9,15 @@
 #include "bi.h"
 
 // Sequential operations
+#ifdef RBTREE_BI
+#define READ_GET(sh) bi_dereference_pointer_lazy((sh).val)
+#else
+#define READ_GET(sh) ((const __typeof__((sh).val)) (sh).val)
+#endif
+#define GET(sh) ((const __typeof__((sh).val)) (sh).val)
 #define SHARED(typ, name) struct { typ val; } name
 #define SET(sh, v) ((sh).val = (v))
-#define GET(sh) ((const __typeof__((sh).val)) (sh).val)
+#define GET_SZ(sh) ((const __typeof__((sh).val)) (sh).val)
 #define V(x) ({typeof(x) __x = (x); __x ? __x->value : NULL;})
 
 /******************************************************************
@@ -67,7 +73,7 @@ nodeOf(kv_t *kv)
 static inline int
 nodeSize(node_t *node)
 {
-	        return node ? GET(node->size) : 0;
+	        return node ? GET_SZ(node->size) : 0;
 }
 
 static inline struct cb_root *
