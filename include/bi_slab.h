@@ -15,12 +15,13 @@ struct ps_slab {
 	size_t memsz;	/* size of backing memory */
 	struct Free_mem_item *mem_item;
 	struct ps_slab_info *si;
-	char   pad[CACHE_LINE-3*sizeof(void *)+sizeof(size_t)];
+	char   pad1[CACHE_LINE-3*sizeof(void *)-sizeof(size_t)];
 
 	/* Frequently modified data on the owning core... */
 	struct ps_mheader *freelist; /* free objs in this slab */
 	struct ps_list     list;     /* freelist of slabs */
 	size_t             nfree;    /* # allocations in freelist */
+	char   pad2[CACHE_LINE-sizeof(void *)-sizeof(size_t)-sizeof(struct ps_list)];
 }__attribute__((packed));
 
 struct ps_slab_freelist {
