@@ -60,6 +60,7 @@ struct Mem_layout {
 	struct Per_node_info wlog_rings;
 	struct Per_node_info mem_free_lists;
 	struct Per_node_info mem_start_addr;
+	struct Per_node_info malloc_start_addr;
 	struct Global_rdtsc time;
 	struct Global_barrier g_bar;
 	struct Global_barrier bars[NUM_NODES];
@@ -68,6 +69,7 @@ struct Mem_layout {
 } __attribute__((aligned(CACHE_LINE), packed));
 
 extern struct Mem_layout *global_layout;
+extern void *malloc_area;
 
 static inline void *
 get_send_ring(int nid)
@@ -121,6 +123,12 @@ static inline void *
 get_mem_start_addr(int nid)
 {
 	return global_layout->mem_start_addr.info[nid];
+}
+
+static inline void *
+get_malloc_start_addr(int nid)
+{
+	return global_layout->malloc_start_addr.info[nid];
 }
 
 static inline ck_spinlock_mcs_t

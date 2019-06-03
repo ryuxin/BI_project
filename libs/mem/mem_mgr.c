@@ -9,6 +9,7 @@
 
 struct Mem_layout *global_layout;
 struct ps_list_head free_mem_head;
+void *malloc_area;
 
 static inline void
 __init_magic_str(char *s)
@@ -193,6 +194,8 @@ init_global_memory(void *global_memory, char *s)
 	addr = (void *)round_up_to_page(addr);
 	global_layout->data_area = addr;
 	addr = __init_mem_start_addr(&global_layout->mem_start_addr, addr);
+	
+	__init_mem_start_addr(&global_layout->malloc_start_addr, malloc_area);
 
 	global_layout->g_bar.barrier = 0;
 	for(i=0; i<NUM_NODES; i++) {

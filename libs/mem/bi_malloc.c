@@ -126,7 +126,7 @@ bi_malloc(size_t size)
 void
 bi_malloc_init(void)
 {
-	bump_addr = get_mem_start_addr(NODE_ID());
+	bump_addr = get_malloc_start_addr(NODE_ID());
 	end_addr  = bump_addr + MEM_MGR_OBJ_SZ * MEM_MGR_OBJ_NUM;
 }
 

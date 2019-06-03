@@ -17,6 +17,10 @@
 #include "bi.h"
 #include "bi_rcu.h"
 
+#define MALLOC_FILE_NAME "/lfs/cache_test"
+#define MALLOC_FILE_SIZE (5*1024*1024*1024UL)
+#define MALLOC_FILE_ADDR ((void *)NULL)
+
 volatile int running_cores;
 char recv_buf[MAX_MSG_SIZE];
 
@@ -37,11 +41,6 @@ map_memory(const char *test_file, long file_size, void *map_addr)
 	printf("bi init: map global memory %p\n", mem);
 #endif
 
-#ifdef ENABLE_NON_CC_OP
-	printf("bi init: using Non CC memory\n");
-#else
-	printf("bi init: using CC memory\n");
-#endif
 	if (mem == MAP_FAILED) {
 		printf("mmap failed: file %s sz %ld\n", test_file, file_size);
 		exit(-1);
@@ -56,6 +55,12 @@ __global_init_share(int node_id, int node_num, int core_num, const char *test_fi
 	setup_node_num(node_num);
 	setup_core_num(core_num);
 	rpc_init_global();
+	malloc_area = map_memory(MALLOC_FILE_NAME, MALLOC_FILE_SIZE, MALLOC_FILE_ADDR);
+#ifdef ENABLE_NON_CC_OP
+	printf("bi init: using Non CC memory\n");
+#else
+	printf("bi init: using CC memory\n");
+#endif
 	return map_memory(test_file, file_size, map_addr);
 }
 
