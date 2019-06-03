@@ -24,8 +24,8 @@ static inline void
 clflush_range_opt(void *s, size_t sz)
 {
 	void *e;
+	e = (void *)round_to_cacheline(s + sz - 1);
 	s = (void *)round_to_cacheline(s);
-	e = (void *)round_to_cacheline(s + sz);
 	for(; s<=e; s += CACHE_LINE) bi_flush_cache(s);
 }
 
@@ -40,8 +40,8 @@ static inline void
 clwb_range_opt(void *s, size_t sz)
 {
 	void *e;
+	e = (void *)round_to_cacheline(s + sz - 1);
 	s = (void *)round_to_cacheline(s);
-	e = (void *)round_to_cacheline(s + sz);
 	for(; s<=e; s += CACHE_LINE) bi_wb_cache(s);
 }
 
