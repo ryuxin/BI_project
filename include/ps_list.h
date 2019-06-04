@@ -81,12 +81,12 @@ ps_list_head_empty(struct ps_list_head *lh)
 { return ps_list_ll_empty(&lh->l); }
 
 static inline void
-ps_list_ll_add(struct ps_list *l, struct ps_list *new)
+ps_list_ll_add(struct ps_list *l, struct ps_list *n)
 {
-	new->n    = l->n;
-	new->p    = l;
-	l->n      = new;
-	new->n->p = new;
+	n->n    = l->n;
+	n->p    = l;
+	l->n      = n;
+	n->n->p = n;
 }
 
 static inline void
