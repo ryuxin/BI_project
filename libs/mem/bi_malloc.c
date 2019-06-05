@@ -4,12 +4,12 @@
 #include <stdio.h>
 #include "mem_mgr.h"
 
-#define MEM_BLOCK_SIZE	(4*PAGE_SIZE)
+#define MEM_BLOCK_SIZE	(16*PAGE_SIZE)
 #define BLOCK_START(b)	(((void*)(b))-sizeof(__alloc_t))
 #define BLOCK_RET(b)	(((void*)(b))+sizeof(__alloc_t))
 #define __SMALL_NR(i)		(MEM_BLOCK_SIZE/(i))
-#define __MIN_SMALL_SIZE	__SMALL_NR(512)		/* 32 */
-#define __MAX_SMALL_SIZE	__SMALL_NR(2)		/* 8192 */
+#define __MIN_SMALL_SIZE	__SMALL_NR(1024)	/* 64 */
+#define __MAX_SMALL_SIZE	__SMALL_NR(2)		/* 32768 */
 #define GET_SIZE(s)		(__MIN_SMALL_SIZE<<get_index((s)))
 
 typedef struct {
@@ -18,13 +18,13 @@ typedef struct {
 } __alloc_t;
 
 static void *bump_addr, *end_addr;
-static __thread __alloc_t* __small_mem[9];
+static __thread __alloc_t* __small_mem[10];
 
 static inline size_t
 get_index(size_t _size) 
 {
 	size_t idx, size;
-	size = ((_size-1) & (MEM_BLOCK_SIZE-1)) >> 5;
+	size = ((_size-1) & (MEM_BLOCK_SIZE-1)) >> 6;
 	for (idx = 0; size; size >>= 1, ++idx);
 	return idx;
 }
