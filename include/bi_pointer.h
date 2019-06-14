@@ -73,7 +73,7 @@ bi_publish_area(void *dst, void *src, size_t sz)
 		__p = BI_ACCESS_ONCE((ptr));             \
 		__m = __ps_mhead_get(__p);              \
 		/* detect stale prefetch */      \
-		if (unlikely(__p && __ps_mhead_isfree(__m))) {  \
+		if (bi_unlikely(__p && __ps_mhead_isfree(__m))) {  \
 			bi_flush_cache(__m);             \
 			bi_wmb();                        \
 		}                                        \

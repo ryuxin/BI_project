@@ -36,7 +36,7 @@ do_mmap(size_t size)
 	do {
 		old_b = bump_addr;
 		new_b = bump_addr + size;
-        } while (unlikely(!bi_cas((unsigned long *)&bump_addr, (unsigned long )old_b, (unsigned long )new_b)));
+        } while (bi_unlikely(!bi_cas((unsigned long *)&bump_addr, (unsigned long )old_b, (unsigned long )new_b)));
 	return old_b;
 }
 
@@ -50,7 +50,7 @@ __small_free(void *_ptr, size_t _size)
 	do {
 		prev      = __small_mem[idx];
 		ptr->next = prev;
-	} while (unlikely(!bi_cas((unsigned long *)&__small_mem[idx], (unsigned long)prev, (unsigned long)ptr)));
+	} while (bi_unlikely(!bi_cas((unsigned long *)&__small_mem[idx], (unsigned long)prev, (unsigned long)ptr)));
 }
 
 static inline void *
@@ -63,7 +63,7 @@ __small_malloc(size_t _size)
 	idx = get_index(size);
 	do {
 		ptr = __small_mem[idx];
-		if (unlikely(!ptr))  {	/* no free blocks ? */
+		if (bi_unlikely(!ptr))  {	/* no free blocks ? */
 			int i,nr;
 			__alloc_t *start, *second, *end;
 			
@@ -85,12 +85,12 @@ __small_malloc(size_t _size)
 				/* Hook a possibly existing list to
 				 * the end of our new list */
 				end->next = ptr;
-			} while (unlikely(!bi_cas((unsigned long *)&__small_mem[idx], (unsigned long )ptr, (unsigned long )second)));
+			} while (bi_unlikely(!bi_cas((unsigned long *)&__small_mem[idx], (unsigned long )ptr, (unsigned long )second)));
 			return start;
 		} 
 		next = ptr->next;
 		//__small_mem[idx]=ptr->next;
-	} while (unlikely(!bi_cas((unsigned long *)&__small_mem[idx], (unsigned long )ptr, (unsigned long )next)));
+	} while (bi_unlikely(!bi_cas((unsigned long *)&__small_mem[idx], (unsigned long )ptr, (unsigned long )next)));
 	ptr->next = NULL;
 
 	return ptr;

@@ -12,12 +12,8 @@ extern int num_node_in_use;
 extern int num_core_in_use;
 extern __thread int local_core_id;
 
-#ifndef likely
-#define likely(x)      __builtin_expect(!!(x), 1)
-#endif
-#ifndef unlikely
-#define unlikely(x)    __builtin_expect(!!(x), 0)
-#endif
+#define bi_likely(x)      __builtin_expect(!!(x), 1)
+#define bi_unlikely(x)    __builtin_expect(!!(x), 0)
 #define round_to_pow2(x, pow2)    (((unsigned long)(x))&(~((pow2)-1)))
 #define round_up_to_pow2(x, pow2) (round_to_pow2(((unsigned long)x)+(pow2)-1, (pow2)))
 #define round_to_cacheline(x)     round_to_pow2(x, CACHE_LINE)

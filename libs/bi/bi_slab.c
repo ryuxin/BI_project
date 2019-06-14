@@ -156,10 +156,10 @@ __ps_slab_mem_alloc(struct ps_slab_info *si, size_t allocsz, size_t headoff)
 	assert(si->obj_sz + headoff <= allocsz);
 
 	s = si->fl.list;
-	if (unlikely(!s)) {
+	if (bi_unlikely(!s)) {
 		/* allocation function must initialize s->memory */
 		s = ps_slab_defalloc(allocsz);
-		if (unlikely(!s)) return NULL;
+		if (bi_unlikely(!s)) return NULL;
 		
 		__ps_slab_init(si, s, allocsz, headoff);
 		si->nslabs++;

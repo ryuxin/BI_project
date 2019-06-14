@@ -65,7 +65,7 @@ rpc_send_ext(struct msg_queue *q, int *pos, void *data, size_t size)
 	mn = &(q->ring[cur]);
 //	clflush_range(&mn->meta, CACHE_LINE);
 //	bi_inst_bar();
-//	if (unlikely(mn->meta.use)) return -1;
+//	if (bi_unlikely(mn->meta.use)) return -1;
 	memcpy(mn->data, data, size);
 	clwb_range(mn->data, size);
 	mn->meta.size = size;
