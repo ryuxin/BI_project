@@ -172,14 +172,15 @@ test_quies(void)
 	assert(tot_core == num_core);
 
 	for(i=0; i<ITER; i++) {
-		tsc = bi_quiesce();
+		tsc = bi_quiesce(bi_global_rtdsc());
 		assert(tsc);
 		assert(tsc < bi_global_rtdsc());
 	}
 
+	tsc = bi_global_rtdsc();
 	start = bi_local_rdtsc();
 	for(i=0; i<ITER; i++) {
-		bi_quiesce();
+		bi_quiesce(tsc);
 	}
 	end = bi_local_rdtsc();
 	end = (end - start)/ITER;

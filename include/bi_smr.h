@@ -54,7 +54,10 @@ void bi_qsc_cache_init(void);
 void bi_qsc_cache_alloc(void);
 int bi_qsc_cache_flush(void);
 
-uint64_t bi_quiesce(void);
+uint64_t bi_quiescei_smr(uint64_t);
+uint64_t bi_quiesce_cache(uint64_t);
+uint64_t bi_quiesce(uint64_t);
+
 void bi_smr_free(void *buf);
 int bi_smr_reclaim(void);
 int bi_smr_flush(void);

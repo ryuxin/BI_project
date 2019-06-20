@@ -173,7 +173,7 @@ bi_qsc_cache_flush(void)
 }
 
 uint64_t
-bi_quiesce(void)
+bi_quiesce_smr(uint64_t time)
 {
 	int i, j, qsc_cpu, tot_cpu, curr, tot_core;
 	ps_tsc_t min_known_qsc;
@@ -182,7 +182,7 @@ bi_quiesce(void)
 	curr          = NODE_ID();
 	tot_cpu       = get_active_node_num();
 	tot_core      = get_active_core_num();
-	min_known_qsc = bi_global_rtdsc();
+	min_known_qsc = time;
 	/* invalidate all cores parsec info first */
 	for (i = 1 ; i < tot_cpu; i++) {
 		/* Make sure we don't all hammer core 0... */
@@ -208,6 +208,21 @@ bi_quiesce(void)
 	}
 	bi_mb();
 	return min_known_qsc;
+}
+
+uint64_t
+bi_quiesce_cache(uint64_t time)
+{
+	return time - FLUSH_GRACE_PERIOD;
+}
+
+uint64_t
+bi_quiesce(uint64_t time)
+{
+	ps_tsc_t qsc;
+	qsc = bi_quiesce_smr(time);
+	qsc = bi_quiesce_cache(qsc);
+	return qsc;
 }
 
 void
@@ -236,8 +251,7 @@ bi_smr_reclaim(void)
 	assert(ql);
 	a    = qsc_ring_peek(ql);
 	if (!a) return i;
-	qsc  = bi_quiesce();
-	qsc -= FLUSH_GRACE_PERIOD;
+	qsc  = bi_quiesce(bi_global_rtdsc());
 
 	while (1) {
 		a = qsc_ring_peek(ql);
@@ -305,8 +319,7 @@ bi_wlog_reclaim(void)
 	assert(ql);
         a    = qsc_ring_peek(ql);
 	if (!a) return i;
-	qsc  = bi_global_rtdsc();
-	qsc -= FLUSH_GRACE_PERIOD;
+	qsc  = bi_quiesce_cache(bi_global_rtdsc());
 	while (1) {
 		a = qsc_ring_peek(ql);
 		if (!a || a->tsc_free > qsc) break;
