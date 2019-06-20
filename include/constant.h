@@ -25,7 +25,6 @@
 #define MEM_MGR_OBJ_NUM (320)
 
 /******** PARSEC ************/
-#define ENABLE_WLOG
 #define MAX_QUI_RING_LEN (1*4096)
 #define LOCAL_CACHE_QUEUE_SZ MAX_QUI_RING_LEN
 #define GLOBAL_TSC_PERIOD (500000)

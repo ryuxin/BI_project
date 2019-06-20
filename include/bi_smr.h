@@ -62,9 +62,9 @@ void bi_smr_free(void *buf);
 int bi_smr_reclaim(void);
 int bi_smr_flush(void);
 
-void bi_wlog_free(void *buf, size_t sz);
-int bi_wlog_reclaim(void);
-int bi_wlog_flush(void);
+void bi_wlog_free(void *buf, size_t sz, int cid);
+int bi_wlog_reclaim(int cid);
+int bi_wlog_flush(int cid);
 
 void bi_enter(void);
 void bi_exit(void);

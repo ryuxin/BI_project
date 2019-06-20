@@ -8,10 +8,11 @@
 struct qsc_local_cache {
 	void **m;
 	size_t *sz;
+	struct bi_qsc_ring *ql;
 	int cnt;
 };
 
-static struct qsc_local_cache smr_cache, wlog_cache;
+static struct qsc_local_cache smr_cache, wlog_cache[NUM_CORE_PER_NODE];
 struct parsec parsec_time_cache[NUM_CORE_PER_NODE];
 
 int dbgf = 0;
@@ -74,11 +75,22 @@ qsc_local_cache_init(struct qsc_local_cache *lc)
 }
 
 static inline void
-qsc_local_cache_alloc(struct qsc_local_cache *lc)
+qsc_local_cache_alloc(struct qsc_local_cache *lc, struct bi_qsc_ring *ql)
 {
         lc->m  = malloc(sizeof(void *) * LOCAL_CACHE_QUEUE_SZ);
         lc->sz = malloc(sizeof(size_t) * LOCAL_CACHE_QUEUE_SZ);
+	lc->ql = ql;
         qsc_local_cache_init(lc);
+}
+
+static inline int
+qsc_local_cache_flush(struct qsc_local_cache *lc)
+{
+	int r;
+	r = lc->cnt;
+	qsc_ring_enqueue_batch(lc->ql, lc->m, lc->sz, lc->cnt);
+	qsc_local_cache_init(lc);
+	return r;
 }
 
 static inline void
@@ -91,16 +103,7 @@ qsc_local_cache_put(struct qsc_local_cache *lc, void *buf, size_t s)
 	lc->m[c]  = buf;
 	lc->sz[c] = s;
 	lc->cnt   = c+1;
-}
-
-static inline int
-qsc_local_cache_flush(struct bi_qsc_ring *ql, struct qsc_local_cache *lc)
-{
-	int r;
-	r = lc->cnt;
-	qsc_ring_enqueue_batch(ql, lc->m, lc->sz, lc->cnt);
-	qsc_local_cache_init(lc);
-	return r;
+	if (lc->cnt == LOCAL_CACHE_QUEUE_SZ) qsc_local_cache_flush(lc);
 }
 
 static inline void
@@ -124,10 +127,31 @@ static inline int
 __ps_in_lib(struct parsec *ps)
 { return ps->time_out <= ps->time_in; }
 
+static inline void
+bi_smr_cache_init(void)
+{
+	qsc_local_cache_init(&smr_cache);
+}
+	
+static inline int
+bi_smr_cache_flush(void)
+{
+	return qsc_local_cache_flush(&smr_cache);
+}
+
 void
 bi_wlog_cache_init(void)
 {
-        qsc_local_cache_init(&wlog_cache);
+	int i;
+	for(i=0; i<NUM_CORE_PER_NODE; i++) {
+		 qsc_local_cache_init(&wlog_cache[i]);
+	}
+}
+
+static inline int
+bi_wlog_cache_flush(int cid)
+{
+	return qsc_local_cache_flush(&wlog_cache[cid]);
 }
 
 /*
@@ -148,27 +172,30 @@ bi_wlog_cache_init(void)
 void
 bi_qsc_cache_init(void)
 {
-	qsc_local_cache_init(&smr_cache);
-        qsc_local_cache_init(&wlog_cache);
+	bi_smr_cache_init();
+	bi_wlog_cache_init();
 }
 
 void
 bi_qsc_cache_alloc(void)
 {
-	qsc_local_cache_alloc(&smr_cache);
-#ifdef ENABLE_WLOG
-        qsc_local_cache_alloc(&wlog_cache);
-#endif
+	int i;
+	qsc_local_cache_alloc(&smr_cache, get_quies_ring(NODE_ID()));
+	for(i=0; i<NUM_CORE_PER_NODE; i++) {
+        	qsc_local_cache_alloc(&wlog_cache[i], get_wlog_ring(NODE_ID(), i));
+	}
 }
 
 int
 bi_qsc_cache_flush(void)
 {
-	int r;
-	r = qsc_local_cache_flush(get_quies_ring(NODE_ID()), &smr_cache);
-#ifdef ENABLE_WLOG
-	r += qsc_local_cache_flush(get_wlog_ring(NODE_ID()), &wlog_cache);
-#endif
+	int r, i, tot_core;
+
+	r = qsc_local_cache_flush(&smr_cache);
+	tot_core = get_active_core_num();
+	for(i=0; i<tot_core; i++) {
+		r += qsc_local_cache_flush(&wlog_cache[i]);
+	}
 	return r;
 }
 
@@ -272,6 +299,8 @@ bi_smr_flush(void)
         int i, r, qsc_cpu, tot_cpu, curr;
         struct bi_qsc_ring *ql;
 
+	bi_smr_cache_flush();
+
         curr    = NODE_ID();
         tot_cpu = get_active_node_num();
         for (i = 1 ; i < tot_cpu; i++) {
@@ -295,27 +324,22 @@ bi_smr_flush(void)
 }
 
 void
-bi_wlog_free(void *buf, size_t sz)
+bi_wlog_free(void *buf, size_t sz, int cid)
 {
-#ifdef ENABLE_WLOG
         assert(buf);
 //	qsc_ring_enqueue_batch(get_wlog_ring(NODE_ID()), &buf, &sz, 1);
-        qsc_local_cache_put(&wlog_cache, buf, sz);
-#else
-        (void)buf;
-        bi_mb();
-#endif
+        qsc_local_cache_put(&wlog_cache[cid], buf, sz);
 }
 
 int
-bi_wlog_reclaim(void)
+bi_wlog_reclaim(int cid)
 {
 	struct bi_qsc_ring *ql;
         struct quies_item *a;
         int i=0;
         ps_tsc_t qsc;
 
-	ql   = get_wlog_ring(NODE_ID());
+	ql   = get_wlog_ring(NODE_ID(), cid);
 	assert(ql);
         a    = qsc_ring_peek(ql);
 	if (!a) return i;
@@ -331,15 +355,12 @@ bi_wlog_reclaim(void)
 }
 
 int
-bi_wlog_flush(void)
+bi_wlog_flush(int cid)
 {
         int i, r, qsc_cpu, tot_cpu, curr;
         struct bi_qsc_ring *ql;
 
-#ifndef ENABLE_WLOG
-        printf("Warning writer log is not enabled\n");
-        return -1;
-#endif
+	bi_wlog_cache_flush(cid);
 
         curr    = NODE_ID();
         tot_cpu = get_active_node_num();
@@ -347,14 +368,14 @@ bi_wlog_flush(void)
                 /* Make sure we don't all hammer core 0... */
                 qsc_cpu = (curr + i) % tot_cpu;
                 assert(qsc_cpu != curr);
-                ql = get_wlog_ring(qsc_cpu);
+                ql = get_wlog_ring(qsc_cpu, cid);
                 clflush_range_opt(ql, sizeof(struct bi_qsc_ring));
         }
         bi_mb();
 
         for (r=0, i = 1; i < tot_cpu; i++) {
                 qsc_cpu = (curr + i) % tot_cpu;
-                ql = get_wlog_ring(qsc_cpu);
+                ql = get_wlog_ring(qsc_cpu, cid);
                 r += (MAX_QUI_RING_LEN + ql->tail - ql->head) % MAX_QUI_RING_LEN;
                 qsc_ring_flush(ql);
         }

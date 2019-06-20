@@ -59,6 +59,20 @@ __init_quies_rings(struct Per_node_info *quies, void *addr)
 }
 
 static inline void *
+__init_wlogs_rings(struct Per_core_info *quies, void *addr)
+{
+	int i, j;
+	for(i=0; i<NUM_NODES; i++) {
+		for(j=0; j<NUM_CORE_PER_NODE; j++) {
+			quies->info[i][j] = addr;
+			qsc_ring_struct_init((struct bi_qsc_ring *)(quies->info[i][j]));
+			addr += sizeof(struct bi_qsc_ring);
+		}
+	}
+	return addr;
+}
+
+static inline void *
 __init_mem_free_lists(struct Per_node_info *mem_free, void *addr)
 {
 	int i;
@@ -176,7 +190,7 @@ init_global_memory(void *global_memory, char *s)
 
 	addr = (void *)round_up_to_page(addr);
 	global_layout->wlog_area = addr;
-	addr = __init_quies_rings(&global_layout->wlog_rings, addr);
+	addr = __init_wlogs_rings(&global_layout->wlog_rings, addr);
 
 	__init_mcs_locks();
 	addr = (void *)round_up_to_page(addr);

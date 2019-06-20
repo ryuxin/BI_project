@@ -91,9 +91,9 @@ bi_global_init_slave(int node_id, int node_num, int core_num, const char *test_f
 
 	mem = __global_init_share(node_id, node_num, core_num, test_file, file_size, map_addr);
 	global_layout = (struct Mem_layout *)mem;
-	bi_qsc_cache_alloc();
 	bi_wait_barrier(1);
 	clflush_range(mem, file_size);
+	bi_qsc_cache_alloc();
 	return mem;
 }
 

@@ -106,7 +106,7 @@ bi_publish_area(void *dst, void *src, size_t sz)
 	       	__typeof__(ptr) __pv = (v);                \
 		*(&(ptr)) = __pv;                        \
 		bi_wb_cache(&(ptr));                     \
-		bi_wlog_free((&(ptr)), CACHE_LINE);      \
+		bi_wlog_free((&(ptr)), CACHE_LINE, 0);      \
 	} while (0)
 
 #endif /* BI_POINTER_H */

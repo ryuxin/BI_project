@@ -5,6 +5,7 @@
 #include "cbtree.h"
 
 #define MAX_FREE_BUF_SZ (1024)
+#define ENABLE_WLOG 1
 
 /************ TODO add app flush function only flush root? ********/
 
@@ -26,7 +27,7 @@ TreeBBNewNode(void)
 	node_t *r;
 	r = bi_slab_alloc(slab_allocator);
 #ifdef ENABLE_WLOG
-	bi_wlog_free(r, slab_allocator->obj_sz);
+//	bi_wlog_free(r, slab_allocator->obj_sz, 0);
 #endif
 	return r;
 }
@@ -90,8 +91,8 @@ app_flush_tree(void)
 static void
 app_flush_wlog(void)
 {
-	bi_wlog_flush();
-	bi_wlog_reclaim();
+	bi_wlog_flush(0);
+	bi_wlog_reclaim(0);
 }
 
 void
@@ -109,7 +110,6 @@ rbtree_msg_handler(void *msg, size_t sz, int nid, int cid)
 	else msg_reply.value = cb_erase_svr(req->tree, req->key);
 	r = rpc_send_server(nid, cid, &msg_reply, sz);
 	free_nodes();
-	bi_qsc_cache_flush();
 	assert(r == 0);
 }
 
@@ -191,7 +191,7 @@ cb_tree_init(struct cb_root *tree, int tree_sz, int range)
 		cb_insert_svr(tree, (k_t)j, (void *)j);
 		free_nodes_seq();
 		bi_wlog_cache_init();
-		qsc_ring_struct_init((struct bi_qsc_ring *)get_wlog_ring(NODE_ID()));
+		qsc_ring_struct_init((struct bi_qsc_ring *)get_wlog_ring(NODE_ID(), 0));
 		j = (j + r) % range;
 	}
 	assert(nodeSize(tree->root) == tree_sz);

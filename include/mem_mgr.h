@@ -57,7 +57,7 @@ struct Mem_layout {
 	struct Per_core_info recv_rings[NUM_NODES];
 	struct Per_core_info parsec_times;
 	struct Per_node_info quies_rings;
-	struct Per_node_info wlog_rings;
+	struct Per_core_info wlog_rings;
 	struct Per_node_info mem_free_lists;
 	struct Per_node_info mem_start_addr;
 	struct Per_node_info malloc_start_addr;
@@ -108,9 +108,9 @@ get_quies_ring(int nid)
 }
 
 static inline void *
-get_wlog_ring(int nid)
+get_wlog_ring(int nid, int cid)
 {
-        return global_layout->wlog_rings.info[nid];
+        return global_layout->wlog_rings.info[nid][cid];
 }
 
 static inline void *
