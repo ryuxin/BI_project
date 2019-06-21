@@ -185,8 +185,7 @@ void *init_global_memory(void *global_memory, char *s);
 void mem_mgr_init();
 struct Free_mem_item *mem_mgr_alloc(size_t sz);
 void mem_mgr_free(struct Free_mem_item *buf);
-/* malloc style allocation, while thread-safe,
- * should not used with above phy mem allocator */
+/* malloc style allocation, while thread-safe */
 void bi_malloc_init(void);
 void *bi_malloc(size_t size);
 void bi_free(void *ptr);

@@ -37,6 +37,7 @@ do_mmap(size_t size)
 		old_b = bump_addr;
 		new_b = bump_addr + size;
         } while (bi_unlikely(!bi_cas((unsigned long *)&bump_addr, (unsigned long )old_b, (unsigned long )new_b)));
+	assert(old_b < end_addr);
 	return old_b;
 }
 
@@ -68,7 +69,6 @@ __small_malloc(size_t _size)
 			__alloc_t *start, *second, *end;
 			
 			start = ptr = do_mmap(MEM_BLOCK_SIZE);
-			assert((void *)ptr < end_addr);
 
 			nr=__SMALL_NR(size)-1;
 			for (i=0; i<nr ;i++) {
@@ -103,8 +103,7 @@ bi_free(void *ptr)
 	if (ptr) {
 		size = ((__alloc_t*)BLOCK_START(ptr))->size;
 		assert(size);
-		assert(size <= __MAX_SMALL_SIZE);
-		__small_free(ptr,size);
+		if (size <= __MAX_SMALL_SIZE) __small_free(ptr,size);
 	}
 }
 
@@ -115,9 +114,13 @@ bi_malloc(size_t size)
 	size_t need;
 
 	size += sizeof(__alloc_t);
-	assert(size <= __MAX_SMALL_SIZE);
-	need  = GET_SIZE(size);
-	ptr   = __small_malloc(need);
+	if (size <= __MAX_SMALL_SIZE) {
+		need  = GET_SIZE(size);
+		ptr   = __small_malloc(need);
+	} else {
+		need = size;
+		ptr = do_mmap(size);
+	}
 	assert(ptr);
 	ptr->size = need;
 	return BLOCK_RET(ptr);

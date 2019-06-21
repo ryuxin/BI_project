@@ -17,7 +17,7 @@
 #include "bi.h"
 #include "bi_rcu.h"
 
-#define MALLOC_FILE_NAME "/lfs/cache_test"
+#define MALLOC_FILE_NAME "/lfs/malloc_data"
 #define MALLOC_FILE_SIZE (5*1024*1024*1024UL)
 #define MALLOC_FILE_ADDR ((void *)NULL)
 
