@@ -50,6 +50,7 @@ qsc_ring_struct_init(struct bi_qsc_ring *p)
 }
 
 void bi_wlog_cache_init(void);
+int bi_wlog_cache_flush(int cid);
 void bi_qsc_cache_init(void);
 void bi_qsc_cache_alloc(void);
 int bi_qsc_cache_flush(void);

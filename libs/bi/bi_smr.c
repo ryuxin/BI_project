@@ -148,7 +148,7 @@ bi_wlog_cache_init(void)
 	}
 }
 
-static inline int
+int
 bi_wlog_cache_flush(int cid)
 {
 	return qsc_local_cache_flush(&wlog_cache[cid]);
