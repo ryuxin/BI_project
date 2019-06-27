@@ -89,7 +89,7 @@ __init_mem_start_addr(struct Per_node_info *mem_addr, void *addr)
 	int i;
 	for(i=0; i<NUM_NODES; i++) {
 		mem_addr->info[i] = addr;
-		addr += MEM_MGR_OBJ_SZ * MEM_MGR_OBJ_NUM;
+		addr += (size_t)MEM_MGR_OBJ_SZ * (size_t)MEM_MGR_OBJ_NUM;
 	}
 	return addr;
 }
@@ -127,6 +127,7 @@ mem_mgr_init(void)
 	struct Free_mem_list *lh;
 	void *addr;
 
+	mem_area_flush();
 	lh   = get_mem_free_list(NODE_ID());
 	addr = get_mem_start_addr(NODE_ID());
 	assert(addr);

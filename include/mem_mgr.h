@@ -131,6 +131,14 @@ get_malloc_start_addr(int nid)
 	return global_layout->malloc_start_addr.info[nid];
 }
 
+static inline void
+mem_area_flush(void)
+{
+	clflush_range(&global_layout->mem_free_lists, sizeof(struct Per_node_info));
+	clflush_range(&global_layout->mem_start_addr, sizeof(struct Per_node_info));
+	clflush_range(&global_layout->malloc_start_addr, sizeof(struct Per_node_info));
+}
+
 static inline ck_spinlock_mcs_t
 get_mcs_lock_cntxt(void)
 {

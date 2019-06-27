@@ -37,7 +37,7 @@ do_mmap(size_t size)
 		old_b = bump_addr;
 		new_b = bump_addr + size;
         } while (bi_unlikely(!bi_cas((unsigned long *)&bump_addr, (unsigned long )old_b, (unsigned long )new_b)));
-	assert(old_b < end_addr);
+	assert(new_b < end_addr);
 	return old_b;
 }
 
@@ -130,6 +130,6 @@ void
 bi_malloc_init(void)
 {
 	bump_addr = get_malloc_start_addr(NODE_ID());
-	end_addr  = bump_addr + MEM_MGR_OBJ_SZ * MEM_MGR_OBJ_NUM;
+	end_addr  = bump_addr + (size_t)MEM_MGR_OBJ_SZ * (size_t)MEM_MGR_OBJ_NUM;
 }
 
