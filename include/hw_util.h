@@ -34,6 +34,7 @@ void load_trace(long nops, unsigned int percent_update, char *ops);
 uint64_t bi_global_rtdsc();
 int convert_to_core_id(int nid, int cid);
 void thd_set_affinity(pthread_t tid, int nid, int cid);
+void thd_set_affinity_to_core(pthread_t tid, int core);
 extern int dbg_r;
 void start_time(void);
 void end_time(int n);

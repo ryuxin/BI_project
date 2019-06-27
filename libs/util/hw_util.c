@@ -54,20 +54,28 @@ convert_to_core_id(int nid, int cid)
 }
 
 void
-thd_set_affinity(pthread_t tid, int nid, int cid)
+thd_set_affinity_to_core(pthread_t tid, int core)
 {
 	cpu_set_t s;
-	int ret, cpuid;
+	int ret;
 
-	cpuid = convert_to_core_id(nid, cid);
 	CPU_ZERO(&s);
-	CPU_SET(cpuid, &s);
+	CPU_SET(core, &s);
 
 	ret = pthread_setaffinity_np(tid, sizeof(cpu_set_t), &s);
 	if (ret) {
 		perror("setting affinity error\n");
 		exit(-1);
 	}
+}
+	
+void
+thd_set_affinity(pthread_t tid, int nid, int cid)
+{
+	int cpuid;
+
+	cpuid = convert_to_core_id(nid, cid);
+	thd_set_affinity_to_core(tid, cpuid);
 }
 
 static void
