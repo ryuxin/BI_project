@@ -163,7 +163,7 @@ mem_mgr_free(struct Free_mem_item *buf)
 }
 
 void *
-init_global_memory(void *global_memory, char *s)
+init_global_memory(void *global_memory, char *s, void **data_area)
 {
 	void *addr;
 	int i;
@@ -209,6 +209,7 @@ init_global_memory(void *global_memory, char *s)
 	addr = (void *)round_up_to_page(addr);
 	global_layout->data_area = addr;
 	addr = __init_mem_start_addr(&global_layout->mem_start_addr, addr);
+	*data_area = global_layout->data_area;
 	
 	__init_mem_start_addr(&global_layout->malloc_start_addr, malloc_area);
 

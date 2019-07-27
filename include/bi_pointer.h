@@ -67,7 +67,7 @@ bi_publish_area(void *dst, void *src, size_t sz)
 	__typeof__(ptr) __p = BI_ACCESS_ONCE((ptr));     \
 	struct ps_mheader *__m  = __ps_mhead_get(__p);   \
 	/* lazy invalidation */                          \
-	if (__p && __ps_mhead_isfree(__m)) {            \
+	if (!__p ||  __ps_mhead_isfree(__m)) {            \
 		bi_flush_cache(&(ptr));                  \
 		bi_wmb();                                \
 		__p = BI_ACCESS_ONCE((ptr));             \

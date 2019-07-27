@@ -28,5 +28,6 @@ void bi_local_init_reader(int core_id);
 void bi_local_init_server(int core_id, int ncore);
 /* BI server run loop, finish after all other reader exit */
 void bi_server_run(bi_update_fn_t update_fn, bi_flush_fn_t flush_fn);
+void bi_server_stop(void);
 
 #endif /* BI_HEADER_H */

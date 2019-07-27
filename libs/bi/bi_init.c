@@ -33,9 +33,13 @@ map_memory(const char *test_file, long file_size, void *map_addr)
 	mem = mmap(map_addr, file_size, PROT_READ | PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, 0, 0);
 	printf("bi init: map local memory %p\n", mem);
 #else
-	int fd;
+	int fd, r;
 	fd = open(test_file, O_CREAT | O_RDWR, 0666);
-	ftruncate(fd, file_size);
+	r  = ftruncate(fd, file_size);
+	if (r) {
+		printf("ftruncate fail %s\n", test_file);
+		exit(-1);
+	}
 	mem = mmap(map_addr, file_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 	close(fd);
 	printf("bi init: map global memory %p\n", mem);
@@ -67,14 +71,15 @@ __global_init_share(int node_id, int node_num, int core_num, const char *test_fi
 void *
 bi_global_init_master(int node_id, int node_num, int core_num, const char *test_file, long file_size, void *map_addr, char *test_string)
 {
-	void *mem, *end;
+	void *mem, *end, *data_area;
 
 	mem = __global_init_share(node_id, node_num, core_num, test_file, file_size, map_addr);
 	global_layout = (struct Mem_layout *)mem;
 	bi_set_barrier(0);
 	memset(mem, 0, file_size);
-	end = init_global_memory(mem, test_string);
-	assert(end - mem < file_size);
+	end = init_global_memory(mem, test_string, &data_area);
+	assert(data_area - mem < file_size);
+	//assert(end - mem < file_size);
 	bi_global_rtdsc();
 	clwb_range(mem, file_size);
 	mem_mgr_init();
@@ -159,3 +164,7 @@ bi_server_run(bi_update_fn_t update_fn, bi_flush_fn_t flush_fn)
 		if (update_fn) update_fn(recv_buf, s, nd, cd);
 	}
 }
+
+void
+bi_server_stop(void)
+{ running_cores = 0; }

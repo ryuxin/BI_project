@@ -188,7 +188,7 @@ dbg_chk_per_node(struct Per_node_info *p)
 void bi_set_barrier(int k);
 void bi_wait_barrier(int k);
 /* This is called only once by master node */
-void *init_global_memory(void *global_memory, char *s);
+void *init_global_memory(void *global_memory, char *s, void **data_area);
 /* This is called by every node to init phy mem allocator */
 void mem_mgr_init();
 struct Free_mem_item *mem_mgr_alloc(size_t sz);
