@@ -180,7 +180,6 @@ __ps_slab_mem_alloc(struct ps_slab_info *si, size_t allocsz, size_t headoff)
 		__slab_freelist_add(&si->el, s);
 	}
 	__ps_slab_freelist_check(&si->fl);
-	dbg_log_add("alloc mem", h);
 
 	return __ps_mhead_mem(h);
 }

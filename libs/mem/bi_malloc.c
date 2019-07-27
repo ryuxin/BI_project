@@ -75,7 +75,6 @@ do_mmap(size_t size)
 		old_b = bump_addr;
 		new_b = old_b + size;
         } while (bi_unlikely(!bi_cas((unsigned long *)&bump_addr, (unsigned long)old_b, (unsigned long)new_b)));
-	if (new_b >= end_addr) printf("BUG malloc fail no memory\n");
 	assert(new_b < end_addr);
 	return old_b;
 }

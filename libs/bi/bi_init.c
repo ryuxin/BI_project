@@ -97,10 +97,8 @@ bi_global_init_slave(int node_id, int node_num, int core_num, const char *test_f
 
 	mem = __global_init_share(node_id, node_num, core_num, test_file, file_size, map_addr);
 	global_layout = (struct Mem_layout *)mem;
-	printf("dbg bi slave wait bar\n");
 	bi_wait_barrier(1);
 	clflush_range(mem, file_size);
-	printf("dbg bi slave bar\n");
 	bi_qsc_cache_alloc();
 	return mem;
 }
@@ -121,7 +119,6 @@ bi_local_init_server(int core_id, int ncore)
 	for(i=0; i<NUM_CORE_PER_NODE; i++) parsec_struct_init(&parsec_time_cache[i]);
 }
 
-uint64_t dbg_flush_t;
 void
 bi_server_run(bi_update_fn_t update_fn, bi_flush_fn_t flush_fn)
 {
@@ -158,8 +155,6 @@ bi_server_run(bi_update_fn_t update_fn, bi_flush_fn_t flush_fn)
 			bi_smr_flush();
 			bi_smr_reclaim();
 			flush_prev = curr;
-			dbg_flush_t = bi_global_rtdsc();
-			dbg_log_flush();
 		}
 		if (curr - tsc_prev > GLOBAL_TSC_PERIOD) {
 			if (NODE_ID() == 0) bi_global_rtdsc();
@@ -168,10 +163,7 @@ bi_server_run(bi_update_fn_t update_fn, bi_flush_fn_t flush_fn)
 		}
 		s = rpc_recv_server(recv_buf, &nd, &cd);
 		if (!s) continue;
-//start_time();
 		if (update_fn) update_fn(recv_buf, s, nd, cd);
-dbg_r = 1;
-//	end_time(1000000);
 	}
 }
 

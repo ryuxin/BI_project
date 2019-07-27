@@ -21,19 +21,12 @@ mkNode(node_t *left, node_t *right, kv_t *kv)
 {
 	node_t *node = TreeBBNewNode();
 	assert(node);
-//	struct ps_mheader *h;
-//	h = __ps_mhead_get(node);
-//	h->next = (void *)dbgaloc;
-//	dbgaloc++;
-//	if (dbgaloc % 20 == 0) printf("dbg node all t %ld\n", h->type);
 
 	SET(node->left, left);
 	SET(node->right, right);
 	SET(node->size, 1 + nodeSize(left) + nodeSize(right));
 	node->kv = *kv;
 	clwb_range_opt(node, sizeof(node_t));
-        dbg_log_add("make node", node);
-        dbg_log_add("make node", (void *)(kv->key));
 	return node;
 }
 
