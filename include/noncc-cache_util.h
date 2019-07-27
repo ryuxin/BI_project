@@ -7,6 +7,7 @@
 static inline void
 bi_flush_cache(void *p)
 {
+	if (!p || p == 0x40) return ;
 #ifdef ENABLE_CLFLUSHOPT
 	__asm__ __volatile__("clflushopt (%0)" :: "r"(p));
 #else
@@ -17,6 +18,7 @@ bi_flush_cache(void *p)
 static inline void
 bi_wb_cache(void *p)
 {
+	if (!p || p == 0x40) return ;
 	__asm__ __volatile__("clwb (%0)" :: "r"(p));
 }
 

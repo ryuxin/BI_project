@@ -108,15 +108,18 @@ bi_set_barrier(int k)
 {
 	global_layout->g_bar.barrier = k;
 	clwb_range(&global_layout->g_bar, CACHE_LINE);
+	printf("dbg bar %d\n", global_layout->g_bar.barrier);
 }
 
 void
 bi_wait_barrier(int k)
 {
-	int r = 0;
+	int r = 0, c = 0;
 	do {
 		clflush_range(&global_layout->g_bar, CACHE_LINE);
 		r =  global_layout->g_bar.barrier;
+		if (c++ > 100000 && r > 100000) break;
+//		printf("dbg r %d k %d re %d\n", r, k, global_layout->g_bar.barrier);
 	} while(r != k);
 }
 

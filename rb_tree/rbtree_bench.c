@@ -134,6 +134,7 @@ bench(struct thread_data *mythd)
 	void *dr;
 	uint64_t s, e, s1, e1, cost_r = 0, cost_w = 0, cost;
 
+	dbg_log_init();
 	assert(mythd->ncore == get_active_core_num());
 	assert(mythd->nd == NODE_ID());
 	assert(mythd->cd == CORE_ID());

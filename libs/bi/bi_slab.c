@@ -180,6 +180,7 @@ __ps_slab_mem_alloc(struct ps_slab_info *si, size_t allocsz, size_t headoff)
 		__slab_freelist_add(&si->el, s);
 	}
 	__ps_slab_freelist_check(&si->fl);
+	dbg_log_add("alloc mem", h);
 
 	return __ps_mhead_mem(h);
 }
@@ -197,6 +198,7 @@ bi_slab_create(size_t obj_sz)
 {
 	struct ps_slab_info *si;
 	assert(__ps_slab_objmemsz(obj_sz) < MEM_MGR_OBJ_SZ);
+	printf("dbg slab sz %ld\n", __ps_slab_objmemsz(obj_sz));
 
 	si = malloc(sizeof(struct ps_slab_info));
 	bi_slab_init(si, obj_sz);

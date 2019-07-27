@@ -46,6 +46,48 @@ end_time(int n)
 	}
 }
 
+FILE *dbg_log_fp[NUM_NODES];
+void
+dbg_log_init_ext(int nid)
+{
+	char fname[20];
+	FILE * fp;
+	memset(dbg_log_fp, 0, sizeof(dbg_log_fp));
+	snprintf(fname, 20, "./dbg_log/log_%d", nid);
+	fp = fopen(fname, "w");
+	if (!fp) printf("dbg log create file failed\n");
+	dbg_log_fp[nid] = fp;
+}
+
+void
+dbg_log_add_ext(int nid, char *s, void *p)
+{
+	uint64_t ct;
+	ct = bi_global_rtdsc();
+	if (dbg_log_fp[nid]) fprintf(dbg_log_fp[nid], "%lu %s %p\n", ct, s, p);
+}
+
+void
+dbg_log_init(void)
+{
+	dbg_log_init_ext(NODE_ID());
+}
+
+void
+dbg_log_add(char *s, void *p)
+{
+	dbg_log_add_ext(NODE_ID(), s, p);
+}
+
+void
+dbg_log_flush(void)
+{
+	int i;
+	for(i=0; i<NUM_NODES; i++) {
+		if (dbg_log_fp[i]) fflush(dbg_log_fp[i]);
+	}
+}
+
 int
 convert_to_core_id(int nid, int cid)
 {

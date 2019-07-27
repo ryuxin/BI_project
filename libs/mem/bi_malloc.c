@@ -75,6 +75,7 @@ do_mmap(size_t size)
 		old_b = bump_addr;
 		new_b = old_b + size;
         } while (bi_unlikely(!bi_cas((unsigned long *)&bump_addr, (unsigned long)old_b, (unsigned long)new_b)));
+	if (new_b >= end_addr) printf("BUG malloc fail no memory\n");
 	assert(new_b < end_addr);
 	return old_b;
 }
@@ -193,3 +194,11 @@ bi_malloc_init(void)
 	}
 }
 
+
+/*************************** debug ***********************/
+void
+bi_malloc_status(char *s)
+{
+	if (s) printf("%s", s);
+	printf("node %d start %p end %p bump %p\n", NODE_ID(), get_malloc_start_addr(NODE_ID()), end_addr, bump_addr);
+}

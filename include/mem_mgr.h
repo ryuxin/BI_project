@@ -198,4 +198,6 @@ void bi_malloc_init(void);
 void *bi_malloc(size_t size);
 void bi_free(void *ptr);
 
+void bi_malloc_status(char *s);
+
 #endif /* MEM_MGR_H */

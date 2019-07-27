@@ -21,11 +21,19 @@ mkNode(node_t *left, node_t *right, kv_t *kv)
 {
 	node_t *node = TreeBBNewNode();
 	assert(node);
+//	struct ps_mheader *h;
+//	h = __ps_mhead_get(node);
+//	h->next = (void *)dbgaloc;
+//	dbgaloc++;
+//	if (dbgaloc % 20 == 0) printf("dbg node all t %ld\n", h->type);
+
 	SET(node->left, left);
 	SET(node->right, right);
 	SET(node->size, 1 + nodeSize(left) + nodeSize(right));
 	node->kv = *kv;
 	clwb_range_opt(node, sizeof(node_t));
+        dbg_log_add("make node", node);
+        dbg_log_add("make node", (void *)(kv->key));
 	return node;
 }
 
@@ -248,6 +256,7 @@ struct cb_kv *
 TreeBB_Find(struct cb_root *tree, uintptr_t needle)
 {
 	node_t *node;
+	long dc = 0;
 
 #ifdef RBTREE_BI
 	node = bi_dereference_pointer_lazy(tree->root);
@@ -255,13 +264,53 @@ TreeBB_Find(struct cb_root *tree, uintptr_t needle)
 	node = tree->root;
 #endif
 	while (node) {
+		dc++;
+		//if (1 && dc > 1000000) {
+		if (dc > 0) {
+			uintptr_t t1, t2;
+			struct ps_mheader *h;
+			ps_tsc_t y1, y2, x1, x2;
+			uint64_t ct1, ct2;
+		
+			ct1 = bi_global_rtdsc();
+			h = __ps_mhead_get(node);
+			t1 = node->kv.key;
+			y1 = h->type;
+			x1 = (ps_tsc_t)h->next;
+//			clflush_range(node, sizeof(node_t));
+			clflush_range(h, CACHE_LINE);
+			t2 = node->kv.key;
+			y2 = h->type;
+			x2 = (ps_tsc_t)h->next;
+			if (t1 != t2 && 1) {
+				ct2 = bi_global_rtdsc();
+				printf("dbg old n %p k %lu ty %ld nx %ld\n", node, t1, y1, x1);
+				printf("dbg new h %p k %lu ty %ld nx %ld\n", &(node->kv.key), t2, y2, x2);
+				printf("dbg time %lu %lu node sz %lu\n", ct1, ct2, sizeof(node_t));
+				assert(0);
+			}
+		}
+		if (node->kv.key == needle) break;
+		else if (node->kv.key > needle) node = READ_GET(node->left);
+		else node = READ_GET(node->right);
+	}
+	return node ? &node->kv : NULL;
+}
+/*
+struct cb_kv *
+TreeBB_Find(struct cb_root *tree, uintptr_t needle)
+{
+	node_t *node;
+
+	node = bi_dereference_pointer_lazy(tree->root);
+	while (node) {
 		if (node->kv.key == needle) break;
 		else if (node->kv.key > needle) node = GET(node->left);
 		else node = GET(node->right);
 	}
 	return node ? &node->kv : NULL;
 }
-
+*/
 /*
 struct cb_kv *
 TreeBB_FindGT(struct cb_root *tree, uintptr_t needle)

@@ -39,6 +39,10 @@ extern int dbg_r;
 void start_time(void);
 void end_time(int n);
 
+void dbg_log_init(void);
+void dbg_log_add(char *s, void *p);
+void dbg_log_flush(void);
+
 /* x86 cpuid instruction barrier. */
 static inline void
 bi_inst_bar(void)

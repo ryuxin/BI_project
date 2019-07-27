@@ -21,11 +21,22 @@ static node_t *free_buf[MAX_FREE_BUF_SZ];
 struct rbtree_msg msg_reply = { .type = -1 };
 static struct cb_root *g_tree;
 
+static long dbgaloc = 0;
+
 node_t *
 TreeBBNewNode(void)
 {
 	node_t *r;
 	r = bi_slab_alloc(slab_allocator);
+
+	/*
+struct ps_mheader *h;
+h = __ps_mhead_get(r);
+h->next = (void *)dbgaloc;
+h->next = (void *)bi_global_rtdsc();
+dbgaloc++;
+*/
+//      if (dbgaloc % 20 == 0) printf("dbg node all t %ld\n", h->type);
 #ifdef ENABLE_WLOG
 //	bi_wlog_free(r, slab_allocator->obj_sz, 0);
 #endif
@@ -106,8 +117,10 @@ rbtree_msg_handler(void *msg, size_t sz, int nid, int cid)
 
 	req = (struct rbtree_msg *)msg;
 	assert(req->type >= 0);
+//start_time();
 	if (req->type == 0) cb_insert_svr(req->tree, req->key, req->value);
 	else msg_reply.value = cb_erase_svr(req->tree, req->key);
+//end_time(2000000);
 	r = rpc_send_server(nid, cid, &msg_reply, sz);
 	free_nodes();
 	assert(r == 0);
@@ -172,8 +185,10 @@ cb_find(struct cb_root *tree, uintptr_t needle)
 	struct cb_kv *ret;
 
 	bi_enter();
+//if (CORE_ID() == 1) start_time();
 	ret = TreeBB_Find(tree, needle);
 	if (ret) assert(V(ret) == (void *)needle);
+//if (CORE_ID() == 1) end_time(500000);
 	bi_exit();
 	return ret;
 }

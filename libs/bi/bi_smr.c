@@ -49,11 +49,13 @@ qsc_ring_enqueue_batch(struct bi_qsc_ring *ql, void **m, size_t *sz, int batch)
 	struct quies_item *qi;
 
 	for(j = ql->tail, i=0; i<batch; i++) {
+		/*
 		if (ql->head == (j + 1) % MAX_QUI_RING_LEN) {
-			printf("quisence ring full %d\n", MAX_QUI_RING_LEN);
+			printf("quisence ring full %d node %d core %d\n", MAX_QUI_RING_LEN, NODE_ID(), CORE_ID());
 			assert(0);
 			return -1;
 		}
+		*/
 
 	        qi           = &(ql->ring[j]);
         	qi->mh       = m[i];
@@ -120,6 +122,7 @@ qsc_ring_flush(struct bi_qsc_ring *ql)
 			__builtin_prefetch(&(ql->ring[j]), 0, 0);
 		}
 		clflush_range_opt(s->mh, s->sz);
+		dbg_log_add("cache flush", s->mh);
 	}
 }
 
@@ -264,6 +267,7 @@ bi_smr_free(void *buf)
 	__ps_mhead_setfree(m);
 //	qsc_ring_enqueue_batch(get_quies_ring(NODE_ID()), &m, &sz, 1);
         qsc_local_cache_put(&smr_cache, m, sz);
+	dbg_log_add("add smr", m);
 }
 
 int
@@ -286,6 +290,7 @@ bi_smr_reclaim(void)
 
 		a = qsc_ring_dequeue(ql);
 		bi_slab_free(__ps_mhead_mem(a->mh));
+		dbg_log_add("reclaim memory", a->mh);
 		i++;
 	}
 	clwb_range(ql, CACHE_LINE);
@@ -329,6 +334,7 @@ bi_wlog_free(void *buf, size_t sz, int cid)
         assert(buf);
 //	qsc_ring_enqueue_batch(get_wlog_ring(NODE_ID()), &buf, &sz, 1);
         qsc_local_cache_put(&wlog_cache[cid], buf, sz);
+	dbg_log_add("add wlog", buf);
 }
 
 int
@@ -381,6 +387,21 @@ bi_wlog_flush(int cid)
         }
         bi_mb();
         return r;
+}
+
+void
+bi_wlog_status(int cid)
+{
+        int i, r, qsc_cpu, tot_cpu, curr;
+        struct bi_qsc_ring *ql;
+        curr    = NODE_ID();
+        tot_cpu = get_active_node_num();
+        for (i = 0 ; i < tot_cpu; i++) {
+                /* Make sure we don't all hammer core 0... */
+                qsc_cpu = (curr + i) % tot_cpu;
+                ql = get_wlog_ring(qsc_cpu, cid);
+		printf("dbg core %d node %d head %d tail %d\n", cid, qsc_cpu, ql->head, ql->tail);
+        }
 }
 
 #if 0 

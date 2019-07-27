@@ -14,8 +14,8 @@ for (( i=$1; i<$1+$2; i++ ))
 do
 	tf="out_"
 	tf+=$i
-	bench="./rbtree_bi_bench.test"
-#	bench="./rbtree_rcu_bench.test"
+#	bench="./rbtree_bi_bench.test"
+	bench="./rbtree_rcu_bench.test"
 	bench+=" -i "
 	bench+=$i
 	bench+=" -n "
@@ -30,7 +30,7 @@ do
 	$bench >> $tf &
 done
 
-sleep 5m
+sleep 10m
 
 dir="cbtree_results/"
 mkdir -p $dir
