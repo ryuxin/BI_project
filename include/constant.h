@@ -25,8 +25,8 @@
 #define MEM_MGR_OBJ_NUM (80*1024)
 
 /******** PARSEC ************/
-#define MAX_QUI_RING_LEN (2000000) // such large is for graph
-//#define MAX_QUI_RING_LEN (128*4096)
+//#define MAX_QUI_RING_LEN (2000000) // such large is for graph
+#define MAX_QUI_RING_LEN (128*4096)
 #define LOCAL_CACHE_QUEUE_SZ (4096) 
 #define GLOBAL_TSC_PERIOD (500000)
 #define QUISE_FLUSH_PERIOD (2000000)
