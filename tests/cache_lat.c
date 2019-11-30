@@ -17,7 +17,7 @@
 #include "bi.h"
 #include "args.h"
 
-#define TEST_FILE_ADDR ((void *)0x7f4b4deed000)
+#define TEST_FILE_ADDR ((void *)0x7f5fb75f4000)
 #define PAGE_NUM (256)
 #define ITER (1024)
 
