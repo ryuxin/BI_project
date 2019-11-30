@@ -17,7 +17,7 @@
 #include "bi.h"
 #include "args.h"
 
-#define TEST_FILE_ADDR ((void *)0x7f5fb75f4000)
+#define TEST_FILE_ADDR ((void *)0x7f5e775f400)
 #define PAGE_NUM (256)
 #define ITER (1024)
 
@@ -131,6 +131,7 @@ int main(int argc, char *argv[])
 
 	test_parse_args(argc, argv);
 	thd_set_affinity(pthread_self(), id_node, 0);
+	bi_local_init_server(0, 1);
 	if (!id_node) {
 		mem = bi_global_init_master(id_node, num_node, num_core,
 					    TEST_FILE_NAME, TEST_FILE_SIZE, TEST_FILE_ADDR, 
