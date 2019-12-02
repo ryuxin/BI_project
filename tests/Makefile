@@ -33,5 +33,6 @@ rw_bench:
 
 cache_lat:
 	@$(CC) cache_lat.c  $(CFLAGS) -o cache_lat.bench $(LDFLAGS)
+
 clean:
 	rm -rf *.o *.d *.test *.bench

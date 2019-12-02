@@ -3,7 +3,7 @@ INC    = -I.
 CFLAGS = $(INC) -Wall -Wextra -Werror -O3 -DNO_PRINT_TITLES
 CFILES = $(wildcard *.c)
 OBJS   = $(patsubst %.c, %.o,$(CFILES))
-BIN    = test
+BIN    = cache_batch.test
 
 %.o:%.c
 	$(info Compiling $<)
