@@ -4,6 +4,7 @@
 /******** TODO: avoid same name of constant.h *****/
 
 /************** hardware setup ********/
+#define TRACE_PATH "/home/ryx/research/trace"
 #define CACHE_LINE 64
 #define PAGE_SIZE 4096
 #define NUM_NODES 4

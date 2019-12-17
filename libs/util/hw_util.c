@@ -140,29 +140,31 @@ trace_gen(int fd, long nops, unsigned int percent_update)
 void
 load_trace(long nops, unsigned int percent_update, char *ops)
 {
-	int fd, ret;
-	int bytes;
+	int fd, bytes;
 	long i, n_read, n_update;
 	char trace_name[TRACE_NAME_LEN];
 
-	sprintf(trace_name, "/root/Desktop/yuxin/trace/%u_update.dat", percent_update);
-	ret = mlock(ops, nops);
+	sprintf(trace_name, TRACE_PATH"/%u_update.dat", percent_update);
+/*
+	int ret = mlock(ops, nops);
 	if (ret) {
 		printf("Cannot lock memory (%d). Check privilege (i.e. use sudo). Exit.\n", ret);
 		exit(-1);
 	}
+*/
 
-	printf("loading trace file @ %s.\n", trace_name);
+	printf("loading trace file @ %s\n", trace_name);
 	/* read the entire trace into memory. */
 	fd = open(trace_name, O_RDONLY);
 	if (fd < 0) {
 		fd = open(trace_name, O_CREAT | O_RDWR, S_IRWXU);
+		if (fd < 0) perror("open");
 		assert(fd >= 0);
 		trace_gen(fd, nops, percent_update);
 	}
 
 	bytes = read(fd, &ops[0], nops);
-	assert(bytes == nops);
+	assert(bytes <= nops);
 	n_read = n_update = 0;
 
 	for (i = 0 ; i < nops ; i++) {
@@ -170,7 +172,7 @@ load_trace(long nops, unsigned int percent_update, char *ops)
 		else if (ops[i] == 'U') { ops[i] = 1; n_update++; }
 		else assert(0);
 	}
-	printf("Trace: read %ld, update %ld, total %ld\n", n_read, n_update, (n_read+n_update));
+	printf("Trace: read %ld, update %ld, nops %ld total %d\n", n_read, n_update, (n_read+n_update), bytes);
 	assert(n_read+n_update == nops);
 
 	close(fd);

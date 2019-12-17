@@ -211,6 +211,7 @@ int main(int argc, char *argv[])
 		mem_mgr_init();
 	}
 	layout = (struct Mem_layout *)mem;
+	printf("magic: %s\n", layout->magic);
 	test_start_addr = get_malloc_start_addr(0);
 	printf("start cache latency benchmark at %p\n", test_start_addr);
 	if (!id_node) {
